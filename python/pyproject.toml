@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eklt-bridge"
+version = "0.1.0"
+description = "Stage-2 EKLT bridge helpers for raytracer-driven event and frame streams."
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24", "Pillow>=10"]
+
+[project.scripts]
+eklt-ros1-relay = "eklt_bridge.ros1_relay.node:main"
+eklt-sequence-source = "eklt_bridge.ros2_source.node:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["eklt_bridge*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

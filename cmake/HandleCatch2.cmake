@@ -6,11 +6,12 @@ if (ENABLE_TESTS)
 
   # Initialize configuration for Catch2
   set(_catch2_local_dir "${PROJECT_SOURCE_DIR}/lib/Catch2")
+  set(_catch2_version "2.13.10")
 
-  if(TARGET Catch2::Catch2WithMain OR TARGET Catch2::Catch2)
+  if(TARGET Catch2::Catch2WithMain OR TARGET Catch2::Catch2 OR TARGET Catch2WithMain OR TARGET Catch2)
     set(Catch2_FOUND TRUE)
   else()
-    find_package(Catch2 3 QUIET)
+    find_package(Catch2 2 QUIET)
   endif()
 
   # Perform configuration
@@ -19,10 +20,11 @@ if (ENABLE_TESTS)
     message(STATUS "Catch2 found in lib/. Adding ${_catch2_local_dir} to the build...")
 
     # Check targets existence
-    if(NOT TARGET Catch2::Catch2WithMain AND NOT TARGET Catch2::Catch2)
+    if(NOT TARGET Catch2::Catch2WithMain AND NOT TARGET Catch2::Catch2
+       AND NOT TARGET Catch2WithMain AND NOT TARGET Catch2)
       add_subdirectory("${_catch2_local_dir}" "${CMAKE_BINARY_DIR}/_deps/catch2-build")
     endif()
-    if(TARGET Catch2::Catch2WithMain OR TARGET Catch2::Catch2)
+    if(TARGET Catch2::Catch2WithMain OR TARGET Catch2::Catch2 OR TARGET Catch2WithMain OR TARGET Catch2)
       set(Catch2_FOUND TRUE)
     endif()
   endif()
@@ -55,7 +57,7 @@ if (ENABLE_TESTS)
       if(_git_result EQUAL 0)
         # If network access is OK, clone it   
         execute_process(
-          COMMAND "${GIT_EXECUTABLE}" clone --depth 1 --branch v3.8.1 https://github.com/catchorg/Catch2.git "${_catch2_local_dir}"
+          COMMAND "${GIT_EXECUTABLE}" clone --depth 1 --branch v${_catch2_version} https://github.com/catchorg/Catch2.git "${_catch2_local_dir}"
           RESULT_VARIABLE _git_clone_result
           OUTPUT_QUIET
           ERROR_QUIET
@@ -64,7 +66,7 @@ if (ENABLE_TESTS)
         # Check cloning result
         if(_git_clone_result EQUAL 0 AND EXISTS "${_catch2_local_dir}/CMakeLists.txt")
           add_subdirectory("${_catch2_local_dir}" "${CMAKE_BINARY_DIR}/_deps/catch2-build")
-          if(TARGET Catch2::Catch2WithMain OR TARGET Catch2::Catch2)
+          if(TARGET Catch2::Catch2WithMain OR TARGET Catch2::Catch2 OR TARGET Catch2WithMain OR TARGET Catch2)
             set(Catch2_FOUND TRUE)
           endif() # All went OK
         else()
@@ -85,10 +87,24 @@ if (ENABLE_TESTS)
 
   # Only add tests if we really have Catch2 (either found or fetched)
   if(ENABLE_TESTS AND Catch2_FOUND)
-    # Ensure the Catch CMake module is discoverable when Catch2 is a subproject.
-    if(DEFINED Catch2_SOURCE_DIR AND EXISTS "${Catch2_SOURCE_DIR}/extras/Catch.cmake")
-      list(APPEND CMAKE_MODULE_PATH "${Catch2_SOURCE_DIR}/extras")
+    if(TARGET Catch2WithMain AND NOT TARGET Catch2::Catch2WithMain)
+      add_library(Catch2::Catch2WithMain ALIAS Catch2WithMain)
     endif()
+    if(TARGET Catch2 AND NOT TARGET Catch2::Catch2)
+      add_library(Catch2::Catch2 ALIAS Catch2)
+    endif()
+
+    # Catch2 v3 keeps Catch.cmake in extras/, while v2 uses contrib/.
+    foreach(_catch2_module_dir
+            "${Catch2_SOURCE_DIR}/extras"
+            "${Catch2_SOURCE_DIR}/contrib"
+            "${_catch2_local_dir}/extras"
+            "${_catch2_local_dir}/contrib")
+      if(EXISTS "${_catch2_module_dir}/Catch.cmake")
+        list(APPEND CMAKE_MODULE_PATH "${_catch2_module_dir}")
+        break()
+      endif()
+    endforeach()
     include(Catch)
     message(STATUS "Catch2 available: tests will be built.")
     # add_subdirectory(tests) or whatever you do:
