@@ -19,7 +19,7 @@ Defaults chosen for the final design:
 
 Public interface targets:
 
-- [ ] Stage 2 ROS2 topics: `/eklt/events` as `std_msgs/msg/UInt8MultiArray` carrying encoded mono event packets, `/eklt/image_raw` as `sensor_msgs/msg/Image` in `mono8`
+- [ ] Stage 2 ROS2 topics: `/eklt/events` as `std_msgs/msg/UInt8MultiArray` carrying encoded generic event batches, `/eklt/image_raw` as `sensor_msgs/msg/Image` in `mono8`
 - [ ] Stage 2 ROS2 visualization topics: `/eklt/rendered_frame`, `/eklt/event_preview`, and `/eklt/feature_tracks` as `sensor_msgs/msg/Image`
 - [ ] Stage 2 ROS1 relay output: `/dvs/events` as `dvs_msgs/EventArray`, `/dvs/image_raw` as `sensor_msgs/Image`
 - [ ] Stage 3 EKLT ROS2 node: keep internal subscription names `events` and `images`, with ROS2 launch remaps defaulting to `/eklt/events` and `/eklt/image_raw`
@@ -61,11 +61,12 @@ Build stage 2 as a small installable Python package inside this repo, not as one
 Python package layout:
 
 - [x] `python/eklt_bridge/raytracer/`: optional import helpers for upstream renderers
-- [x] `python/eklt_bridge/messages/`: conversion helpers for simulated events and rendered frames
+- [x] `python/eklt_bridge/messages/`: bridge transport and frame conversion helpers
+- [x] `python/eklt_bridge/sources/`: pluggable source interfaces and adapters for frames-only or frame-plus-event producers
 - [x] `python/eklt_bridge/ros2_source/`: ROS2 publisher node and CLI entrypoint
 - [x] `python/eklt_bridge/ros1_relay/`: ROS1 relay node and CLI entrypoint
 - [x] `python/eklt_bridge/visualization/`: small reusable helpers that render ROS2 preview images from frames and event batches without building a custom GUI
-- [x] `python/eklt_bridge/config/`: typed config loading for paths, timing, frame size, topic names, and simulator settings
+- [x] `python/eklt_bridge/config/`: typed config loading for paths, timing, frame size, topic names, and source-adapter settings
 
 Stage-2 substeps:
 
@@ -78,12 +79,12 @@ Stage-2 data flow:
 
 - [x] ROS2 source node can replay a frame sequence directly, independent of how frames were produced.
 - [x] It publishes grayscale frames and encoded event batches derived from the same replay timeline.
-- [x] It publishes `/eklt/events` as encoded mono packet bytes on `std_msgs/msg/UInt8MultiArray`.
+- [x] It publishes `/eklt/events` as encoded generic event-batch bytes on `std_msgs/msg/UInt8MultiArray`.
 - [x] It publishes `/eklt/image_raw` as `sensor_msgs/msg/Image`.
 - [x] It publishes `/eklt/rendered_frame` as a ROS2 image preview of the rendered grayscale frame.
-- [x] It publishes `/eklt/event_preview` as a ROS2 image preview generated from short event accumulations on the same simulated timeline.
+- [x] It publishes `/eklt/event_preview` as a ROS2 image preview generated from short event accumulations on the same source timeline.
 - [ ] Standard `ros1_bridge` is used only for shared message types across ROS1 and ROS2.
-- [x] A small ROS1 relay node subscribes to bridged ROS1 encoded mono packet bytes and ROS1 `sensor_msgs/Image`, converts the packets to `dvs_msgs/EventArray`, and republishes to the current EKLT ROS1 topics.
+- [x] A small ROS1 relay node subscribes to bridged ROS1 encoded event-batch bytes and ROS1 `sensor_msgs/Image`, converts the batches to `dvs_msgs/EventArray`, and republishes to the current EKLT ROS1 topics.
 - [ ] The hybrid demo also bridges the ROS1 EKLT `feature_tracks` image back into ROS2 as `/eklt/feature_tracks` so the whole chain is viewable from ROS2 tools.
 
 Stage-2 release intent:
@@ -99,8 +100,8 @@ Stage-2 environment contract:
 
 Encoding and conversion decisions:
 
-- [ ] Stage 2 writes a compact mono event-packet payload and transports it across ROS1/ROS2 using `std_msgs/UInt8MultiArray`, because that keeps the hybrid bridge dependency-light and easy to validate.
-- [ ] The ROS1 relay decodes only the mono packet transport produced by this source.
+- [ ] Stage 2 writes an explicit generic event-batch payload and transports it across ROS1/ROS2 using `std_msgs/UInt8MultiArray`, because that keeps the hybrid bridge dependency-light and easy to validate.
+- [ ] The ROS1 relay decodes only the event-batch transport produced by this source.
 - [ ] Images are published as `mono8` with preserved timestamps shared with the event timeline.
 - [ ] Preview images stay simple: rendered frames in `mono8`, event previews in `mono8`, and EKLT annotated tracks in `bgr8`.
 
@@ -108,6 +109,7 @@ CLI entrypoints to provide:
 
 - [x] `eklt-sequence-source`
 - [x] `eklt-ros1-relay`
+- [x] `eklt-run-rosbag-bridge-demo`
 - [ ] `eklt-preview-events`
 - [ ] `eklt-run-hybrid-demo`
 
@@ -120,7 +122,7 @@ Stage-2 scope limits:
 
 Acceptance for stage 2:
 
-- [x] Python unit tests pass for packet packing, packet unpacking, timestamp mapping, frame conversion, and config parsing.
+- [x] Python unit tests pass for event-batch transport, timestamp mapping, frame conversion, source adapters, and config parsing.
 - [ ] End-to-end smoke test passes: sequence source -> `ros1_bridge` -> ROS1 relay -> current ROS1 EKLT.
 - [ ] Smoke-test success criterion: EKLT receives frames and events, runs without waiting forever for the first image, and produces a non-empty tracks output on the deterministic sample run.
 - [ ] ROS2 visualization smoke test passes: `/eklt/rendered_frame`, `/eklt/event_preview`, and bridged `/eklt/feature_tracks` publish non-empty image streams during the demo run.

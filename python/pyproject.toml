@@ -11,6 +11,7 @@ dependencies = ["numpy>=1.24", "Pillow>=10"]
 
 [project.scripts]
 eklt-ros1-relay = "eklt_bridge.ros1_relay.node:main"
+eklt-run-rosbag-bridge-demo = "eklt_bridge.rosbag_bridge_demo:main"
 eklt-sequence-source = "eklt_bridge.ros2_source.node:main"
 
 [tool.setuptools.packages.find]
