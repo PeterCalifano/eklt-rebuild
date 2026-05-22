@@ -1,28 +1,46 @@
-# Basic usage of catch2 for build config:
-# These tests can use the Catch2-provided main
-#add_executable(tests test.cpp)
-#target_link_libraries(tests PRIVATE Catch2::Catch2WithMain) 
+set(CATCH2_TEST_PROPERTIES "--output-on-failure" "--reporter=compact")
 
-# These tests need their own main
-#add_executable(custom-main-tests test.cpp test-main.cpp)
-#target_link_libraries(custom-main-tests PRIVATE Catch2::Catch2)
+set(CATCH2_INCLUDE_DIR "")
+foreach(candidate_dir
+        "${PROJECT_SOURCE_DIR}/lib/Catch2/single_include"
+        "${PROJECT_SOURCE_DIR}/lib/Catch2/src")
+    if(EXISTS "${candidate_dir}/catch2/catch.hpp")
+        set(CATCH2_INCLUDE_DIR "${candidate_dir}")
+        break()
+    endif()
+endforeach()
 
-# Set additional properties for Catch2 test targets
-set(CATCH2_TEST_PROPERTIES "--output-on-failure;--reporter=compact") 
+if(CATCH2_INCLUDE_DIR STREQUAL "")
+    message(FATAL_ERROR "Catch2 headers were not found in lib/Catch2.")
+endif()
 
-# Exclude EXCLUDED_LIST from the list of tests
-set(EXCLUDED_LIST "test_to_exclude")  # Specify files to exclude WE
-set(TESTS_LIST "") 
+set(EKLT_REGRESSION_TEST_SOURCES
+    catch_main.cpp
+)
 
-# Include the content of the fixtures directory
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+set(EKLT_REGRESSION_TESTS
+    test_patch
+    test_tracker_utils
+)
 
-# Add subdirectory 
-add_subdirectory(template_test)
-add_subdirectory(template_fixtures)
+# Add regression tests to test suite (catch2)
+foreach(test_target ${EKLT_REGRESSION_TESTS})
+    add_executable(${test_target}
+        ${test_target}.cpp
+        ${EKLT_REGRESSION_TEST_SOURCES}
+    )
 
-# Add tests to build
-add_tests(${project_name} EXCLUDED_LIST TESTS_LIST ${CUDA_COMPILE_TARGET} CATCH2_TEST_PROPERTIES Catch2::Catch2WithMain)
+    target_include_directories(${test_target}
+        PRIVATE
+            ${PROJECT_SOURCE_DIR}/include
+            ${CMAKE_CURRENT_SOURCE_DIR}
+            ${CATCH2_INCLUDE_DIR}
+    )
 
-# Make catch2 to search for tests
-message(STATUS "List of test targets: ${TESTS_LIST}")
+    target_link_libraries(${test_target}
+        PRIVATE
+            ${project_name}
+    )
+
+    catch_discover_tests(${test_target} PROPERTIES ${CATCH2_TEST_PROPERTIES})
+endforeach()
