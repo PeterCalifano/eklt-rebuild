@@ -21,14 +21,17 @@ include(cmake/HandleCatch2.cmake)
 include(cmake/cmake_utils.cmake)
 
 set(HEADERS
+    include/flags.h
     include/error.h
     include/optimizer.h
     include/patch.h
     include/tracker.h
+    include/tracker_utils.h
     include/viewer.h
 )
 
 set(SOURCES
+    src/flags.cpp
     src/optimizer.cpp
     src/tracker.cpp
     src/viewer.cpp
