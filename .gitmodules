@@ -1,0 +1,4 @@
+[submodule "lib/fibar_lib"]
+	path = lib/fibar_lib
+	url = git@github.com:ros-event-camera/fibar_lib.git
+	branch = release
