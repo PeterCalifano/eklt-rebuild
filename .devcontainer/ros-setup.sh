@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Install the selected ROS1 or ROS2 distribution into the development image.
 set -Eo pipefail
 set +u
 
@@ -52,7 +53,7 @@ arch="$(dpkg --print-architecture)"
 if [[ "$ros_mode" == "ros" ]]; then
   repo_url="http://packages.ros.org/ros/ubuntu"
   list_file="/etc/apt/sources.list.d/ros.list"
-  
+
   ros_package="ros-${ros_distro}-${ros_profile}"
 
 elif [[ "$ros_mode" == "ros2" ]]; then
@@ -75,21 +76,22 @@ echo "deb [arch=${arch} signed-by=${keyring}] ${repo_url} ${UBUNTU_CODENAME} mai
 # Install ROS dev tools
 apt-get update
 apt-get install -y "$ros_package" python3-rosdep
-apt-get install ros-dev-tools -y
 
-# Install additional packages for ROS 2
+# Install additional packages for ROS 2 (ros-dev-tools only exists in the ROS 2 repos)
 if [[ "$ros_mode" == "ros2" ]]; then
-  apt-get install -y python3-colcon-common-extensions
+  apt-get install -y ros-dev-tools python3-colcon-common-extensions
 fi
 
 # Clean up
 apt-get clean
 rm -rf /var/lib/apt/lists/*
 
-# Source the ROS setup file
-echo "source /opt/ros/${ros_distro}/setup.bash" >> ~/.bashrc
-source /opt/ros/${ros_distro}/setup.bash
-rosdep init
+# Source the ROS setup file system-wide (image is built as root; ~/.bashrc
+# would only affect root, not the devcontainer user)
+echo "source /opt/ros/${ros_distro}/setup.bash" >> /etc/bash.bashrc
+# shellcheck source=/dev/null
+source "/opt/ros/${ros_distro}/setup.bash"
+rosdep init || true
 rosdep update
 
-set -e
+set -eu
