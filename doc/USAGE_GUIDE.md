@@ -128,7 +128,7 @@ Second ROS1 terminal:
 
 ```bash
 source /opt/ros/noetic/setup.bash
-roslaunch eklt eklt.launch tracks_file_txt:=/tmp/eklt_tracks.txt v:=1
+roslaunch eklt_rebuild eklt.launch tracks_file_txt:=/tmp/eklt_tracks.txt v:=1
 ```
 
 ### 4. Start the bridge
@@ -217,7 +217,7 @@ The runner starts:
 
 - `roscore`
 - `ros2 run ros1_bridge dynamic_bridge --bridge-all-topics`
-- `roslaunch eklt eklt.launch`
+- `roslaunch eklt_rebuild eklt.launch`
 - `rosbag play data/eklt_example/boxes_6dof.bag`
 
 Use dry-run mode to inspect exact commands:
@@ -249,7 +249,7 @@ Useful display flags:
 
 ### Track storage
 
-When `tracks_file_txt` is set in `roslaunch eklt eklt.launch`, EKLT writes one row per feature update:
+When `tracks_file_txt` is set in `roslaunch eklt_rebuild eklt.launch`, EKLT writes one row per feature update:
 
 ```text
 feature_id timestamp x y
@@ -264,7 +264,7 @@ Nothing in EKLT itself is rosbag-specific. The original ROS1 path still works ex
 ### Rosbag replay
 
 ```bash
-roslaunch eklt eklt.launch tracks_file_txt:=/tmp/tracks.txt v:=1
+roslaunch eklt_rebuild eklt.launch tracks_file_txt:=/tmp/tracks.txt v:=1
 rosbag play /path/to/recording.bag
 ```
 
@@ -272,7 +272,7 @@ rosbag play /path/to/recording.bag
 
 ```bash
 roslaunch dvs_ros_driver davis_ros_driver.launch
-roslaunch eklt eklt.launch tracks_file_txt:=/tmp/tracks.txt v:=1
+roslaunch eklt_rebuild eklt.launch tracks_file_txt:=/tmp/tracks.txt v:=1
 ```
 
 ### Custom ROS1 publisher
@@ -291,7 +291,7 @@ EKLT runtime flags still come from `config/eklt.conf` and the launch file.
 Inspect them with:
 
 ```bash
-rosrun eklt eklt_node --help
+rosrun eklt_rebuild eklt_node --help
 ```
 
 Most important EKLT parameters:

@@ -1,0 +1,63 @@
+name: verify_eklt_ros1
+run-name: Verify EKLT with ROS 1 Noetic
+
+on:
+  pull_request:
+    paths:
+      - "CMakeLists.txt"
+      - "build_ros1.sh"
+      - "cmake/**"
+      - "config/**"
+      - "dependencies.yaml"
+      - "include/**"
+      - "launch/**"
+      - "package.xml"
+      - "src/**"
+      - ".github/workflows/build_ros1.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    container: ros:noetic-ros-base-focal
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize FIBAR
+        shell: bash
+        run: |
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+          git -c url."https://github.com/".insteadOf="git@github.com:" \
+            submodule update --init lib/fibar_lib
+
+      - name: Install build tools
+        shell: bash
+        run: |
+          apt-get update
+          apt-get install -y \
+            git \
+            libcaer-dev \
+            python3-catkin-tools \
+            python3-vcstool \
+            ros-noetic-camera-info-manager \
+            ros-noetic-image-geometry \
+            ros-noetic-image-view
+
+      - name: Build ROS 1 package
+        shell: bash
+        run: |
+          ./build_ros1.sh \
+            --workspace "${RUNNER_TEMP}/eklt_catkin_ws" \
+            --ros-distro noetic \
+            --import-dependencies \
+            --jobs 2
+
+      - name: Run ROS 1 regression tests
+        shell: bash
+        run: |
+          catkin test \
+            --workspace "${RUNNER_TEMP}/eklt_catkin_ws" \
+            eklt_rebuild
+          catkin_test_results \
+            "${RUNNER_TEMP}/eklt_catkin_ws/build/eklt_rebuild/test_results"

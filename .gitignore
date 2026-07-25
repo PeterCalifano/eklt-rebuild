@@ -1,7 +1,41 @@
 data/
 build/
+build_*/
+debug/
+install/
 .catkin_tools/
 devel
 log*/
 *cache*
+*.so
+*.so.*
+*.dylib
+*.dll
+*.pyd
 Testing/
+lib.root-owned-backup/
+
+# CMake and CPack generated files
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+CMakeUserPresets.json
+Makefile
+cmake_install.cmake
+compile_commands.json
+CTestTestfile.cmake
+install_manifest.txt
+_CPack_Packages/
+_deps/
+
+# ROS 2 colcon outputs
+ros2/build/
+ros2/install/
+ros2/log/
+
+# Generated caches and local agent context
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+CONTEXT.md

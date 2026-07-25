@@ -1,46 +1,73 @@
-set(CATCH2_TEST_PROPERTIES "--output-on-failure" "--reporter=compact")
+# Register project-owned native and ROS1 Catch2 targets.
+include(Catch)
 
-set(CATCH2_INCLUDE_DIR "")
-foreach(candidate_dir
-        "${PROJECT_SOURCE_DIR}/lib/Catch2/single_include"
-        "${PROJECT_SOURCE_DIR}/lib/Catch2/src")
-    if(EXISTS "${candidate_dir}/catch2/catch.hpp")
-        set(CATCH2_INCLUDE_DIR "${candidate_dir}")
-        break()
-    endif()
-endforeach()
+set(EKLT_ROS_FREE_TESTS
+    test_eklt_core_providers
+)
 
-if(CATCH2_INCLUDE_DIR STREQUAL "")
-    message(FATAL_ERROR "Catch2 headers were not found in lib/Catch2.")
+if(TARGET ${LIB_TARGET_NAME})
+    list(APPEND EKLT_ROS_FREE_TESTS test_event_recon_fibar_core)
+endif()
+find_package(Ceres QUIET)
+if(Ceres_FOUND)
+    list(APPEND EKLT_ROS_FREE_TESTS test_eklt_core_photometric)
+else()
+    message(STATUS "Ceres not found: skipping test_eklt_core_photometric")
 endif()
 
-set(EKLT_REGRESSION_TEST_SOURCES
-    catch_main.cpp
-)
-
-set(EKLT_REGRESSION_TESTS
-    test_patch
-    test_tracker_utils
-)
-
-# Add regression tests to test suite (catch2)
-foreach(test_target ${EKLT_REGRESSION_TESTS})
-    add_executable(${test_target}
-        ${test_target}.cpp
-        ${EKLT_REGRESSION_TEST_SOURCES}
-    )
-
-    target_include_directories(${test_target}
+foreach(test_target IN LISTS EKLT_ROS_FREE_TESTS)
+    add_executable(${test_target} ${test_target}.cpp)
+    target_compile_features(${test_target} PRIVATE cxx_std_17)
+    target_link_libraries(
+        ${test_target}
         PRIVATE
-            ${PROJECT_SOURCE_DIR}/include
-            ${CMAKE_CURRENT_SOURCE_DIR}
-            ${CATCH2_INCLUDE_DIR}
+            Catch2::Catch2WithMain
+            eklt_compile_options
     )
 
-    target_link_libraries(${test_target}
-        PRIVATE
-            ${project_name}
-    )
+    if(test_target STREQUAL "test_event_recon_fibar_core")
+        target_link_libraries(${test_target} PRIVATE ${LIB_TARGET_NAME})
+    elseif(test_target STREQUAL "test_eklt_core_photometric")
+        target_link_libraries(${test_target} PRIVATE eklt_core)
+        if(TARGET Ceres::ceres)
+            target_link_libraries(${test_target} PRIVATE Ceres::ceres)
+        else()
+            target_include_directories(${test_target} PRIVATE ${CERES_INCLUDE_DIRS})
+            target_link_libraries(${test_target} PRIVATE ${CERES_LIBRARIES})
+        endif()
+    else()
+        target_link_libraries(${test_target} PRIVATE eklt_core)
+    endif()
 
-    catch_discover_tests(${test_target} PROPERTIES ${CATCH2_TEST_PROPERTIES})
+    catch_discover_tests(
+        ${test_target}
+        REPORTER compact
+        PROPERTIES LABELS "catch2;ros-free"
+    )
 endforeach()
+
+if(EKLT_BUILD_ROS1 AND TARGET eklt)
+    foreach(test_target IN ITEMS test_patch test_tracker_utils)
+        add_executable(${test_target} ${test_target}.cpp)
+        target_compile_features(${test_target} PRIVATE cxx_std_11)
+        target_include_directories(
+            ${test_target}
+            PRIVATE
+                "${PROJECT_SOURCE_DIR}/include"
+                "${CMAKE_CURRENT_SOURCE_DIR}"
+        )
+        target_link_libraries(
+            ${test_target}
+            PRIVATE
+                Catch2::Catch2WithMain
+                eklt
+                ${catkin_LIBRARIES}
+                ${OpenCV_LIBRARIES}
+        )
+        catch_discover_tests(
+            ${test_target}
+            REPORTER compact
+            PROPERTIES LABELS "catch2;ros1"
+        )
+    endforeach()
+endif()

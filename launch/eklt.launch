@@ -4,8 +4,8 @@
   <arg name="tracks_file_txt" default=""/>
 
   <!-- tracker -->
-  <node name="tracker" pkg="eklt" type="eklt_node" output="screen" args="
-  --flagfile=$(find eklt)/config/eklt.conf
+  <node name="tracker" pkg="eklt_rebuild" type="eklt_node" output="screen" args="
+  --flagfile=$(find eklt_rebuild)/config/eklt.conf
   --v=$(arg v)
   --tracks_file_txt=$(arg tracks_file_txt)">
 

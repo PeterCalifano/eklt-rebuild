@@ -1,12 +1,13 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>eklt</name>
-  <version>0.0.0</version>
-  <description>The eklt package</description>
+  <name>eklt_rebuild</name>
+  <version>0.1.0</version>
+  <description>Event-based KLT tracking with optional event-only reconstruction.</description>
 
+  <maintainer email="petercalifano.gs@gmail.com">Pietro Califano</maintainer>
   <maintainer email="daniel.gehrig18@gmail.com">Daniel Gehrig</maintainer>
 
-  <license>GPLv3</license>
+  <license>GPL-3.0-only</license>
 
   <buildtool_depend>catkin</buildtool_depend>
   <buildtool_depend>catkin_simple</buildtool_depend>

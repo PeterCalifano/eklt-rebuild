@@ -1,0 +1,54 @@
+name: verify_eklt_ros2_overlay
+run-name: Verify the optional EKLT ROS 2 overlay
+
+on:
+  pull_request:
+    paths:
+      - "ros2/**"
+      - "src/CMakeLists.txt"
+      - "src/eklt_core/**"
+      - "src/event_recon_fibar_core/**"
+      - "lib/fibar_lib"
+      - "build_ros2.sh"
+      - "CMakeLists.txt"
+      - "cmake/**"
+      - ".github/workflows/build_ros2_overlay.yml"
+  workflow_dispatch:
+
+jobs:
+  overlay-build:
+    runs-on: ubuntu-24.04
+    container: ros:jazzy-ros-base
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Trust checked-out Git worktree
+        shell: bash
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Initialize FIBAR
+        shell: bash
+        run: |
+          git -c url."https://github.com/".insteadOf="git@github.com:" \
+            submodule update --init lib/fibar_lib
+
+      - name: Install ROS 2 overlay dependencies
+        shell: bash
+        run: |
+          apt-get update
+          apt-get install -y \
+            git \
+            libceres-dev \
+            libopencv-dev \
+            python3-colcon-common-extensions \
+            ros-jazzy-event-camera-codecs \
+            ros-jazzy-event-camera-msgs
+
+      - name: Build experimental ROS 2 overlay
+        shell: bash
+        run: |
+          ./build_ros2.sh \
+            --workspace "${RUNNER_TEMP}/eklt_ros2_ws" \
+            --ros-distro jazzy \
+            --jobs 2

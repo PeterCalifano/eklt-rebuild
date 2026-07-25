@@ -1,0 +1,62 @@
+name: verify_eklt_docs
+run-name: Verify EKLT Doxygen documentation
+
+on:
+  push:
+    paths:
+      - "README.md"
+      - "include/**"
+      - "src/**"
+      - "doc/**"
+      - "cmake/**"
+      - "CMakeLists.txt"
+      - ".github/workflows/docs_pages.yml"
+  pull_request:
+    paths:
+      - "README.md"
+      - "include/**"
+      - "src/**"
+      - "doc/**"
+      - "cmake/**"
+      - "CMakeLists.txt"
+      - ".github/workflows/docs_pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-docs:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize FIBAR
+        run: |
+          git -c url."https://github.com/".insteadOf="git@github.com:" \
+            submodule update --init lib/fibar_lib
+
+      - name: Install documentation dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake \
+            doxygen \
+            g++ \
+            graphviz \
+            libopencv-dev
+
+      - name: Build documentation
+        run: |
+          ./build_lib.sh \
+            --build-dir build/ci-docs \
+            --docs \
+            --define DOC_WARN_AS_ERROR=ON \
+            --skip-tests
+
+      - name: Upload documentation artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: eklt-doxygen
+          path: build/ci-docs/html

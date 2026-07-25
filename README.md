@@ -42,7 +42,7 @@ Then clone the repo and all its dependencies using vcs-import
 
 Finally, build the project and then source the workspace
     
-    catkin build eklt
+    catkin build eklt_rebuild
     source ~/catkin_ws/devel/setup.bash
     
 ## Running Example
@@ -56,7 +56,7 @@ Download [boxes_6dof](http://rpg.ifi.uzh.ch/datasets/davis/boxes_6dof.bag) from 
     
 Run EKLT with the following command:
     
-    roslaunch eklt eklt.launch tracks_file_txt:=/tmp/eklt_example/tracks.txt v:=1
+    roslaunch eklt_rebuild eklt.launch tracks_file_txt:=/tmp/eklt_example/tracks.txt v:=1
 
 In a separate terminal play the rosbag:
   
@@ -65,7 +65,7 @@ In a separate terminal play the rosbag:
 **Configuration parameters**: 
 Configuration parameters for eklt can be viewed by running the following command in a sourced terminal:
 
-    rosrun eklt eklt_node --help
+    rosrun eklt_rebuild eklt_node --help
 
 The individual parameters can be changed in `config/eklt.conf`. In particular, the parameter `min_corners` has been set to 0 which makes it such that no new features are initialized after the first image. This configuration was used in the paper. However, for continuous tracking you can set this value higher (50 is a good number).
 Additional optional parameters can be set through the launch file `eklt.launch`:

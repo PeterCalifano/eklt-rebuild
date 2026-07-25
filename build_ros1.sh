@@ -15,7 +15,7 @@ Usage: ./build_ros1.sh [--workspace <dir>] [--ros-distro <name>]
                        [--import-dependencies] [-j <count>]
 
 Creates or reuses a catkin workspace without deleting it, links this checkout
-as the eklt package, and builds with EKLT_BUILD_ROS1=ON.
+as the eklt_rebuild package, and builds with EKLT_BUILD_ROS1=ON.
 USAGE
 }
 
@@ -114,4 +114,4 @@ catkin config \
         -DEKLT_BUILD_MATLAB=OFF \
         -DPYTHON_EXECUTABLE=/usr/bin/python3
 
-catkin build --workspace "${workspace}" --jobs "${jobs}" eklt
+catkin build --workspace "${workspace}" --jobs "${jobs}" eklt_rebuild

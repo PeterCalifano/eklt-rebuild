@@ -1,0 +1,24 @@
+# Resolve the dependencies and feature surface exported by eklt-rebuild.
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+find_dependency(OpenCV 4 COMPONENTS core imgproc features2d)
+
+set(@LIB_NAMESPACE@_WITH_CERES @EKLT_CONFIG_WITH_CERES@)
+set(@LIB_NAMESPACE@_WITH_FIBAR @EKLT_CONFIG_WITH_FIBAR@)
+set(@LIB_NAMESPACE@_WITH_WRAPPER @EKLT_CONFIG_WITH_WRAPPER@)
+
+if(@LIB_NAMESPACE@_WITH_CERES)
+    find_dependency(Ceres)
+endif()
+
+if(@LIB_NAMESPACE@_WITH_FIBAR)
+    find_dependency(fibar_lib)
+endif()
+
+if(@LIB_NAMESPACE@_WITH_WRAPPER)
+    find_dependency(Eigen3 3.4)
+endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/@EKLT_PACKAGE_NAME@Targets.cmake")
+check_required_components(@EKLT_PACKAGE_NAME@)

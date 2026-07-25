@@ -1,0 +1,7 @@
+eklt_rebuild_reconstruction_debug:
+  ros__parameters:
+    events_topic: /events
+    image_topic: /event_reconstruction
+    fibar_cutoff_time_us: 10000
+    fibar_fill_ratio: 0.5
+    fibar_use_spatial_filter: true
