@@ -14,7 +14,9 @@ function(handle_submodules)
             # Ensure cmake CMP0077 policy
             set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 
-            if (NOT _submodule_name STREQUAL "header_only" AND NOT _submodule_name STREQUAL "Catch2")
+            if (NOT _submodule_name STREQUAL "header_only" AND
+                NOT _submodule_name STREQUAL "Catch2" AND
+                NOT _submodule_name STREQUAL "wrap")
                 if (EXISTS "${_submodule_dir}/CMakeLists.txt")
                     add_subdirectory("${_submodule_dir}" EXCLUDE_FROM_ALL)
                 endif()
