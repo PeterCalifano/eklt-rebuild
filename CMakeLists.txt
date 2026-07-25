@@ -32,7 +32,6 @@ include(GNUInstallDirs)
 
 option(BUILD_SHARED_LIBS "Build compiled EKLT libraries as shared libraries" ON)
 option(EKLT_BUILD_ROS1 "Build the ROS1 tracker and node through catkin_simple" OFF)
-option(EKLT_BUILD_FIBAR "Build the ROS-free FIBAR reconstruction library" ON)
 option(EKLT_BUILD_PYTHON "Generate the Python 3.12 wrapper with gtwrap" OFF)
 option(EKLT_BUILD_MATLAB "Generate the MATLAB R2024b wrapper with gtwrap" OFF)
 option(EKLT_BUILD_DOCS "Enable Doxygen documentation targets" OFF)
@@ -115,16 +114,7 @@ endif()
 
 find_package(OpenCV 4 REQUIRED COMPONENTS core imgproc features2d)
 find_package(Ceres QUIET)
-set(EKLT_FIBAR_TARGET "${LIB_TARGET_NAME}")
-
-if(EKLT_BUILD_PYTHON OR EKLT_BUILD_MATLAB)
-    if(NOT EKLT_BUILD_FIBAR)
-        message(FATAL_ERROR
-            "EKLT_BUILD_PYTHON or EKLT_BUILD_MATLAB requires "
-            "EKLT_BUILD_FIBAR=ON")
-    endif()
-    find_package(Eigen3 3.4 REQUIRED NO_MODULE)
-endif()
+find_package(Eigen3 3.4 REQUIRED NO_MODULE)
 
 # Match the parent-template ownership boundary: the root configures policies
 # and dependencies, while src/ owns libraries, installation, and exports.
@@ -165,11 +155,9 @@ if(EKLT_BUILD_ROS1)
             ${SANITIZER_TARGET}
             ${PROFILING_COMPILE_TARGET}
     )
-    if(TARGET ${EKLT_FIBAR_TARGET})
-        # Keep the C++17 FIBAR requirement private so ROS1 consumers retain
-        # the original C++11-facing target contract.
-        target_link_libraries(eklt PRIVATE ${EKLT_FIBAR_TARGET})
-    endif()
+    # Keep the C++17 native-library requirement private so ROS1 consumers
+    # retain the original C++11-facing target contract.
+    target_link_libraries(eklt PRIVATE ${LIB_TARGET_NAME})
 
     cs_add_executable(eklt_node src/eklt_node.cpp)
     target_compile_features(eklt_node PRIVATE cxx_std_11)
@@ -203,11 +191,6 @@ if(BUILD_AS_MAIN_PROJECT AND (EKLT_BUILD_PYTHON OR EKLT_BUILD_MATLAB))
         CACHE STRING "Top namespace used for EKLT gtwrap generation" FORCE
     )
     set(
-        ${LIB_NAMESPACE}_GTWRAP_DEPENDENCY_TARGETS
-        "event_recon_fibar_adapters"
-        CACHE STRING "Targets required before EKLT wrapper generation" FORCE
-    )
-    set(
         ${LIB_NAMESPACE}_GTWRAP_ROOT_DIR
         "${CMAKE_CURRENT_SOURCE_DIR}/lib/wrap"
         CACHE PATH "Pinned local gtwrap checkout" FORCE
@@ -224,7 +207,7 @@ if(BUILD_AS_MAIN_PROJECT AND (EKLT_BUILD_PYTHON OR EKLT_BUILD_MATLAB))
         GTWRAP_ADD_SUBMODULE_IF_MISSING
         OFF CACHE BOOL "Do not add submodules during CMake configure" FORCE
     )
-    set(LIBNAME_WRAP_TARGET event_recon_fibar_adapters)
+    set(LIBNAME_WRAP_TARGET ${LIB_TARGET_NAME})
 
     if(EKLT_BUILD_MATLAB AND NOT DEFINED Matlab_ROOT_DIR)
         set(

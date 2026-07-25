@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Configure and validate the ROS-free native core and optional generated wrappers.
+# Configure and validate the native library and optional generated wrappers.
 set -Eeuo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -23,7 +23,7 @@ usage() {
     cat <<'USAGE'
 Usage: ./build_lib.sh [options]
 
-Build the ROS-free eklt-rebuild core and optional gtwrap adapters.
+Build libeklt-rebuild and optional Python/MATLAB gtwrap modules.
 
 Options:
   -B, --build-dir <dir>  Build directory (default: build/native)

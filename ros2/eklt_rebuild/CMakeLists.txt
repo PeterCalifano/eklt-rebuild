@@ -22,7 +22,6 @@ endif()
 # Build the root package through the same colcon shim pattern used by the
 # parent template, keeping all library names and usage requirements canonical.
 set(EKLT_BUILD_ROS1 OFF CACHE BOOL "Disable ROS1 in the ROS2 overlay" FORCE)
-set(EKLT_BUILD_FIBAR ON CACHE BOOL "Build the FIBAR core for ROS2" FORCE)
 set(EKLT_BUILD_PYTHON OFF CACHE BOOL "Disable Python wrappers in the ROS2 overlay" FORCE)
 set(EKLT_BUILD_MATLAB OFF CACHE BOOL "Disable MATLAB wrappers in the ROS2 overlay" FORCE)
 set(EKLT_BUILD_DOCS OFF CACHE BOOL "Disable native docs in the ROS2 overlay" FORCE)
@@ -38,7 +37,7 @@ add_executable(event_packet_reconstruction_debug
   src/event_packet_reconstruction_debug.cpp
 )
 target_link_libraries(event_packet_reconstruction_debug
-  eklt_rebuild::event_recon_fibar_core
+  eklt_rebuild::eklt-rebuild
 )
 ament_target_dependencies(event_packet_reconstruction_debug
   rclcpp
@@ -51,7 +50,7 @@ add_executable(event_only_eklt_node
   src/event_only_eklt_node.cpp
 )
 target_link_libraries(event_only_eklt_node
-  eklt_rebuild::event_recon_fibar_core
+  eklt_rebuild::eklt-rebuild
   eklt_rebuild::eklt_core
 )
 ament_target_dependencies(event_only_eklt_node

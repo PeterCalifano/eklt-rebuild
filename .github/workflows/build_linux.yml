@@ -48,15 +48,8 @@ jobs:
             --profile \
             --skip-tests
 
-      - name: Verify core-only and static configurations
+      - name: Verify static configuration
         run: |
-          ./build_lib.sh \
-            --build-dir build/ci-core-only \
-            --type Release \
-            --define EKLT_BUILD_FIBAR=OFF \
-            --define ENABLE_FETCH_CATCH2=OFF \
-            --define WARNINGS_ARE_ERRORS=ON \
-            --install
           ./build_lib.sh \
             --build-dir build/ci-static \
             --type Release \
@@ -73,12 +66,6 @@ jobs:
             -DCMAKE_PREFIX_PATH="${PWD}/build/ci-linux/install"
           cmake --build build/ci-consumer --parallel 2
           ./build/ci-consumer/eklt_rebuild_installed_consumer
-          cmake \
-            -S tests/consumer \
-            -B build/ci-core-only-consumer \
-            -DCMAKE_PREFIX_PATH="${PWD}/build/ci-core-only/install"
-          cmake --build build/ci-core-only-consumer --parallel 2
-          ./build/ci-core-only-consumer/eklt_rebuild_installed_consumer
           cmake \
             -S tests/consumer \
             -B build/ci-static-consumer \

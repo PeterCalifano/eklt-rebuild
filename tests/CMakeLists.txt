@@ -3,11 +3,10 @@ include(Catch)
 
 set(EKLT_ROS_FREE_TESTS
     test_eklt_core_providers
+    test_event_recon_fibar_core
+    test_event_recon_fibar_adapters
 )
 
-if(TARGET ${LIB_TARGET_NAME})
-    list(APPEND EKLT_ROS_FREE_TESTS test_event_recon_fibar_core)
-endif()
 find_package(Ceres QUIET)
 if(Ceres_FOUND)
     list(APPEND EKLT_ROS_FREE_TESTS test_eklt_core_photometric)
@@ -25,7 +24,8 @@ foreach(test_target IN LISTS EKLT_ROS_FREE_TESTS)
             eklt_compile_options
     )
 
-    if(test_target STREQUAL "test_event_recon_fibar_core")
+    if(test_target STREQUAL "test_event_recon_fibar_core" OR
+       test_target STREQUAL "test_event_recon_fibar_adapters")
         target_link_libraries(${test_target} PRIVATE ${LIB_TARGET_NAME})
     elseif(test_target STREQUAL "test_eklt_core_photometric")
         target_link_libraries(${test_target} PRIVATE eklt_core)
