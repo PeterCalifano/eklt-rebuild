@@ -15,6 +15,7 @@ on:
       - "launch/**"
       - "package.xml"
       - "src/**"
+      - "tests/**"
       - ".github/workflows/build_ros1.yml"
   pull_request:
     branches:
@@ -29,6 +30,7 @@ on:
       - "launch/**"
       - "package.xml"
       - "src/**"
+      - "tests/**"
       - ".github/workflows/build_ros1.yml"
 
 jobs:
@@ -43,7 +45,7 @@ jobs:
         shell: bash
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
-          git -c url."https://github.com/".insteadOf="git@github.com:" \
+          git -c 'url.https://github.com/.insteadOf=git@github.com:' \
             submodule update --init lib/fibar_lib
 
       - name: Install build tools
@@ -52,15 +54,20 @@ jobs:
           apt-get update
           apt-get install -y \
             git \
-            libcaer-dev \
             libceres-dev \
             libeigen3-dev \
+            libgflags-dev \
+            libgoogle-glog-dev \
             libopencv-dev \
             python3-catkin-tools \
+            python3-pip \
             python3-vcstool \
             ros-noetic-camera-info-manager \
             ros-noetic-image-geometry \
             ros-noetic-image-view
+          # FIBAR target properties and Catch2 v3 discovery require a newer
+          # CMake than Ubuntu Focal's 3.16 package.
+          python3 -m pip install --no-cache-dir cmake==3.27.9
 
       - name: Build ROS 1 package
         shell: bash
@@ -74,8 +81,6 @@ jobs:
       - name: Run ROS 1 regression tests
         shell: bash
         run: |
-          catkin test \
-            --workspace "${RUNNER_TEMP}/eklt_catkin_ws" \
-            eklt_rebuild
-          catkin_test_results \
-            "${RUNNER_TEMP}/eklt_catkin_ws/build/eklt_rebuild/test_results"
+          ctest \
+            --test-dir "${RUNNER_TEMP}/eklt_catkin_ws/build/eklt_rebuild" \
+            --output-on-failure

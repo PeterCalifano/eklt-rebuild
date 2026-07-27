@@ -6,6 +6,7 @@
 #ifndef EKLT_CORE_PHOTOMETRIC_PATCH_TRACKER_H_
 #define EKLT_CORE_PHOTOMETRIC_PATCH_TRACKER_H_
 
+#include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <map>
@@ -152,17 +153,24 @@ namespace eklt_core
         /// @param image Single-channel initialization image.
         /// @param t_us Cache key in absolute microseconds.
         /// @param ref_counter Number of patch references associated with the image.
+        /// @param log_eps Positive intensity offset applied before the logarithm.
         /// @throws std::invalid_argument If `image` is not a non-empty,
-        ///         single-channel 2D matrix or `ref_counter` is nonpositive.
+        ///         single-channel 2D matrix, `ref_counter` is nonpositive, or
+        ///         `log_eps` is not finite or strictly positive.
         void precomputeGradientImage(const cv::Mat &image,
                                      int64_t t_us,
-                                     int ref_counter);
+                                     int ref_counter,
+                                     double log_eps = 1e-2);
 
         /// @brief Release one patch reference to a cached gradient image.
         /// @param t_us Absolute timestamp identifying the cached image.
         /// @return True when a matching cache reference was released.
         /// @details The cache is erased after its final reference is released.
         bool releaseGradientImageReference(int64_t t_us);
+
+        /// @brief Count timestamped gradient images with live patch references.
+        /// @return Number of currently retained gradient caches.
+        std::size_t gradientCacheCount() const;
 
         /// @brief Optimize one patch against its cached initialization gradients.
         /// @param event_frame Signed local event accumulation.
@@ -175,9 +183,13 @@ namespace eklt_core
         /// @param image Single-channel source image.
         /// @param I_x Output horizontal gradient.
         /// @param I_y Output vertical gradient.
+        /// @param log_eps Positive intensity offset applied before the logarithm.
+        /// @details Invalid image geometry or logarithm offset clears both
+        ///          outputs instead of throwing.
         static void computeLogGradients(const cv::Mat &image,
                                         cv::Mat *I_x,
-                                        cv::Mat *I_y);
+                                        cv::Mat *I_y,
+                                        double log_eps = 1e-2);
 
         /// @brief Bootstrap optical-flow direction from local gradients and events.
         /// @param patch Patch containing initialization gradients.

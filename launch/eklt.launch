@@ -2,15 +2,29 @@
   <arg name="bag" default=""/>
   <arg name="v" default="0"/>
   <arg name="tracks_file_txt" default=""/>
+  <arg name="event_topic" default="/dvs/events"/>
+  <arg name="image_topic" default="/dvs/image_raw"/>
+  <arg name="bootstrap" default="klt"/>
+  <arg name="event_only_mode" default="false"/>
+  <arg name="event_only_reconstruction_interval_events" default="5000"/>
+  <arg name="fibar_cutoff_time_us" default="10000"/>
+  <arg name="fibar_fill_ratio" default="0.5"/>
+  <arg name="fibar_use_spatial_filter" default="true"/>
 
   <!-- tracker -->
   <node name="tracker" pkg="eklt_rebuild" type="eklt_node" output="screen" args="
-  --flagfile=$(find eklt_rebuild)/config/eklt.conf
-  --v=$(arg v)
-  --tracks_file_txt=$(arg tracks_file_txt)">
+    --flagfile=$(find eklt_rebuild)/config/eklt.conf
+    --v=$(arg v)
+    --tracks_file_txt=$(arg tracks_file_txt)
+    --bootstrap=$(arg bootstrap)
+    --event_only_mode=$(arg event_only_mode)
+    --event_only_reconstruction_interval_events=$(arg event_only_reconstruction_interval_events)
+    --fibar_cutoff_time_us=$(arg fibar_cutoff_time_us)
+    --fibar_fill_ratio=$(arg fibar_fill_ratio)
+    --fibar_use_spatial_filter=$(arg fibar_use_spatial_filter)">
 
-    <remap from="events" to="/dvs/events"/>
-    <remap from="images" to="/dvs/image_raw"/>
+    <remap from="events" to="$(arg event_topic)"/>
+    <remap from="images" to="$(arg image_topic)"/>
 
   </node>
 

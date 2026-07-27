@@ -6,6 +6,7 @@ set(EKLT_ROS_FREE_TESTS
     test_event_recon_fibar_core
     test_event_recon_fibar_adapters
     test_eklt_core_photometric
+    test_eklt_core_orchestrator
 )
 
 foreach(test_target IN LISTS EKLT_ROS_FREE_TESTS)
@@ -20,7 +21,8 @@ foreach(test_target IN LISTS EKLT_ROS_FREE_TESTS)
 
     if(test_target STREQUAL "test_event_recon_fibar_core" OR
        test_target STREQUAL "test_event_recon_fibar_adapters" OR
-       test_target STREQUAL "test_eklt_core_photometric")
+       test_target STREQUAL "test_eklt_core_photometric" OR
+       test_target STREQUAL "test_eklt_core_orchestrator")
         target_link_libraries(${test_target} PRIVATE ${LIB_TARGET_NAME})
     else()
         target_link_libraries(${test_target} PRIVATE eklt_core)
@@ -34,13 +36,13 @@ foreach(test_target IN LISTS EKLT_ROS_FREE_TESTS)
 endforeach()
 
 if(EKLT_BUILD_ROS1 AND TARGET eklt)
-    foreach(test_target IN ITEMS test_patch test_tracker_utils)
+    foreach(test_target IN ITEMS test_optimizer test_patch test_tracker_utils)
         add_executable(${test_target} ${test_target}.cpp)
         target_compile_features(${test_target} PRIVATE cxx_std_17)
         target_include_directories(
             ${test_target}
             PRIVATE
-                "${PROJECT_SOURCE_DIR}/include"
+                "${PROJECT_SOURCE_DIR}/src/ros1"
                 "${CMAKE_CURRENT_SOURCE_DIR}"
         )
         target_link_libraries(

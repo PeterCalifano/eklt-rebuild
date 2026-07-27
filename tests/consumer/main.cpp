@@ -4,6 +4,7 @@
 #include <eklt_core/image_normalization.h>
 #include <eklt_core/initialization_providers.h>
 #include <eklt_core/photometric_patch_tracker.h>
+#include <eklt_core/tracker_orchestrator.h>
 #include <event_recon_fibar_adapters/fibar_adapters.h>
 #include <event_recon_fibar_core/fibar_reconstructor.h>
 
@@ -25,6 +26,16 @@ int main()
 
     event_recon_fibar_core::CFibarReconstructor reconstructor(config);
     if (reconstructor.width() != 4 || reconstructor.height() != 3)
+    {
+        return 1;
+    }
+
+    // Exercise construction of the complete installed ROS-free tracker.
+    eklt_core::SEkltTrackerConfig tracker_config;
+    tracker_config.width = 32;
+    tracker_config.height = 32;
+    eklt_core::CEkltTrackerOrchestrator tracker(tracker_config);
+    if (tracker.config().width != 32 || tracker.config().height != 32)
     {
         return 1;
     }

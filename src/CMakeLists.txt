@@ -10,15 +10,17 @@ set(EKLT_INSTALL_CORE_HEADERS
     "${CMAKE_CURRENT_SOURCE_DIR}/eklt_core/image_normalization.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/eklt_core/initialization_providers.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/eklt_core/photometric_patch_tracker.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/eklt_core/tracker_orchestrator.h"
 )
 set(EKLT_CORE_SOURCES
     eklt_core/image_normalization.cpp
     eklt_core/initialization_providers.cpp
     eklt_core/photometric_patch_tracker.cpp
+    eklt_core/tracker_orchestrator.cpp
 )
 
-# Publish the provider and photometric interfaces independently of ROS with the
-# same C++17 baseline as the complete native implementation.
+# Publish the provider, photometric, and orchestration interfaces independently
+# of ROS with the same C++17 baseline as the complete native implementation.
 add_library(eklt_core INTERFACE)
 add_library(${LIB_NAMESPACE}::eklt_core ALIAS eklt_core)
 target_compile_features(eklt_core INTERFACE cxx_std_17)

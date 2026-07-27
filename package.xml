@@ -11,14 +11,15 @@
 
   <buildtool_depend>catkin</buildtool_depend>
   <buildtool_depend>catkin_simple</buildtool_depend>
-  
-  <depend>ceres_catkin</depend>
-  <depend>eigen_catkin</depend>
- 
+
+  <depend>eigen</depend>
+  <depend>libceres-dev</depend>
+  <depend>libgflags-dev</depend>
+  <depend>libgoogle-glog-dev</depend>
+  <depend>libopencv-dev</depend>
+
   <depend>sensor_msgs</depend>
   <depend>roscpp</depend>
-  <depend>glog_catkin</depend>
-  <depend>gflags_catkin</depend>
   <depend>dvs_msgs</depend>
   <depend>cv_bridge</depend>
   <depend>image_transport</depend>

@@ -1,8 +1,17 @@
-#include <catch2/catch.hpp>
+/// @file test_patch.cpp
+/// @brief Verifies the ROS1 patch adapter against native patch behavior.
+/// @details Covers bounded event conversion, deterministic accumulation, and
+///          exact synchronization of ROS and native timestamps.
+
+#include <catch2/catch_approx.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include "flags.h"
 #include "patch.h"
 #include "test_fixtures.h"
+#include "tracker_utils.h"
+
+using Catch::Approx;
 
 namespace
 {
@@ -26,10 +35,10 @@ TEST_CASE("Patch insert keeps the newest events and clips to batch size", "[patc
     patch.insert(fixtures::MakeEvent(10, 10, 3.0, true));
     patch.insert(fixtures::MakeEvent(10, 10, 4.0, false));
 
-    REQUIRE(patch.event_buffer_.size() == 3);
-    REQUIRE(patch.event_counter_ == 4);
-    CHECK(patch.event_buffer_.front().ts.toSec() == Approx(4.0));
-    CHECK(patch.event_buffer_.back().ts.toSec() == Approx(2.0));
+    REQUIRE(patch.event_buffer.size() == 3);
+    REQUIRE(patch.event_counter == 4);
+    CHECK(patch.event_buffer.front().t_us == 4000000);
+    CHECK(patch.event_buffer.back().t_us == 2000000);
 }
 
 TEST_CASE("Patch event-frame accumulation and midpoint timestamp stay deterministic", "[patch]")
@@ -50,5 +59,42 @@ TEST_CASE("Patch event-frame accumulation and midpoint timestamp stay determinis
     CHECK(event_frame.at<double>(2, 2) == Approx(1.0));
     CHECK(event_frame.at<double>(2, 3) == Approx(-1.0));
     CHECK(patch.t_curr_.toSec() == Approx(2.0));
-    CHECK(patch.event_counter_ == 0);
+    CHECK(patch.event_counter == 0);
+    CHECK(patch.t_curr_us == tracker::RosTimeToUs(patch.t_curr_));
+}
+
+TEST_CASE("ROS1 patch accumulation matches the native patch contract", "[patch]")
+{
+    ConfigurePatchFlags();
+    const ros::Time initialization_time(7, 123000000);
+    tracker::Patch ros_patch(cv::Point2d(10.0, 10.0), initialization_time);
+    eklt_core::SPhotometricPatch native_patch(ros_patch.id, cv::Point2d(10.0, 10.0),
+                                              tracker::RosTimeToUs(initialization_time),
+                                              FLAGS_patch_size, FLAGS_batch_size,
+                                              FLAGS_update_every_n_events);
+
+    // Feed equivalent transport and native events through their public APIs so
+    // the adapter is checked without duplicating accumulation internals.
+    const dvs_msgs::Event first = fixtures::MakeEvent(10, 10, 8.0, true);
+    const dvs_msgs::Event second = fixtures::MakeEvent(11, 10, 9.0, false);
+    const dvs_msgs::Event third = fixtures::MakeEvent(10, 10, 10.0, true);
+    for (const dvs_msgs::Event *event : {&first, &second, &third})
+    {
+        ros_patch.insert(*event);
+        native_patch.insert(eklt_core::SEventSample{
+            event->x,
+            event->y,
+            static_cast<int8_t>(event->polarity ? 1 : -1),
+            tracker::RosTimeToUs(event->ts),
+        });
+    }
+
+    cv::Mat ros_event_frame;
+    cv::Mat native_event_frame;
+    REQUIRE(ros_patch.getEventFramesAndReset(ros_event_frame));
+    REQUIRE(native_patch.getEventFrameAndReset(&native_event_frame));
+
+    CHECK(cv::norm(ros_event_frame - native_event_frame) == Approx(0.0));
+    CHECK(ros_patch.t_curr_us == native_patch.t_curr_us);
+    CHECK(ros_patch.t_curr_ == tracker::RosTimeFromUs(native_patch.t_curr_us));
 }

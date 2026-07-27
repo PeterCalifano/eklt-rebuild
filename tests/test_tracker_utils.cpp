@@ -1,7 +1,31 @@
-#include <catch2/catch.hpp>
+/// @file test_tracker_utils.cpp
+/// @brief Verifies ordered ROS1 buffering and exact timestamp conversion.
+/// @details Covers stable insertion, causal image selection, and the integer
+///          microsecond native boundary retained for legacy consumers.
+
+#include <catch2/catch_approx.hpp>
+#include <catch2/catch_test_macros.hpp>
+
+#include <limits>
+#include <stdexcept>
 
 #include "test_fixtures.h"
 #include "tracker_utils.h"
+
+using Catch::Approx;
+
+TEST_CASE("ROS timestamps round-trip at native microsecond precision",
+          "[tracker_utils]")
+{
+    const ros::Time timestamp(123, 456789123);
+    const int64_t timestamp_us = tracker::RosTimeToUs(timestamp);
+
+    CHECK(timestamp_us == 123456789);
+    CHECK(tracker::RosTimeFromUs(timestamp_us) == ros::Time(123, 456789000));
+    CHECK_THROWS_AS(tracker::RosTimeFromUs(-1), std::invalid_argument);
+    CHECK_THROWS_AS(tracker::RosTimeFromUs(std::numeric_limits<int64_t>::max()),
+                    std::invalid_argument);
+}
 
 TEST_CASE("Sorted event insertion keeps the buffer in timestamp order", "[tracker_utils]")
 {
@@ -21,7 +45,8 @@ TEST_CASE("Sorted event insertion keeps the buffer in timestamp order", "[tracke
     CHECK(events[2].x == 4);
 }
 
-TEST_CASE("Image iterator advances to the latest frame strictly before the target time", "[tracker_utils]")
+TEST_CASE("Image iterator advances to the latest causal frame",
+          "[tracker_utils]")
 {
     tracker::ImageBuffer images;
     images.emplace(ros::Time(1.0), cv::Mat());

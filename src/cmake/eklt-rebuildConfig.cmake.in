@@ -2,7 +2,7 @@
 @PACKAGE_INIT@
 
 include(CMakeFindDependencyMacro)
-find_dependency(OpenCV 4 COMPONENTS core imgproc features2d)
+find_dependency(OpenCV 4 COMPONENTS core imgproc features2d video)
 find_dependency(Ceres)
 
 if(NOT TARGET Ceres::ceres)
@@ -21,7 +21,7 @@ set(@LIB_NAMESPACE@_WITH_ADAPTERS ON)
 set(@LIB_NAMESPACE@_WITH_WRAPPER @EKLT_CONFIG_WITH_WRAPPER@)
 
 find_dependency(fibar_lib)
-find_dependency(Eigen3 3.4)
+find_dependency(Eigen3 3.3.7)
 
 include("${CMAKE_CURRENT_LIST_DIR}/@EKLT_PACKAGE_NAME@Targets.cmake")
 

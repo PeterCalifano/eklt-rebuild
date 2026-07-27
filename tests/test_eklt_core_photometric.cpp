@@ -170,3 +170,60 @@ TEST_CASE("Photometric optimizer rejects caches without patch references", "[ekl
                     std::invalid_argument);
     CHECK_FALSE(optimizer.releaseGradientImageReference(1001));
 }
+
+TEST_CASE("Photometric gradients honor a validated logarithm offset",
+          "[eklt_core]")
+{
+    const cv::Mat image = MakeCornerImage();
+    cv::Mat default_gradient_x;
+    cv::Mat default_gradient_y;
+    cv::Mat custom_gradient_x;
+    cv::Mat custom_gradient_y;
+
+    eklt_core::CPhotometricOptimizer::computeLogGradients(image, &default_gradient_x,
+                                                          &default_gradient_y);
+    eklt_core::CPhotometricOptimizer::computeLogGradients(image, &custom_gradient_x,
+                                                          &custom_gradient_y, 0.25);
+
+    // The ROS1 compatibility flag must reach the native computation instead of
+    // silently retaining the native default.
+    REQUIRE_FALSE(default_gradient_x.empty());
+    REQUIRE_FALSE(custom_gradient_x.empty());
+    CHECK(cv::norm(default_gradient_x - custom_gradient_x) > 0.0);
+    CHECK(cv::norm(default_gradient_y - custom_gradient_y) > 0.0);
+
+    eklt_core::CPhotometricOptimizer::computeLogGradients(image, &custom_gradient_x,
+                                                          &custom_gradient_y, 0.0);
+    CHECK(custom_gradient_x.empty());
+    CHECK(custom_gradient_y.empty());
+
+    eklt_core::CPhotometricOptimizer optimizer(3);
+    CHECK_THROWS_AS(optimizer.precomputeGradientImage(image, 1002, 1, 0.0),
+                    std::invalid_argument);
+    CHECK_FALSE(optimizer.releaseGradientImageReference(1002));
+}
+
+TEST_CASE("Adaptive batch sizing preserves the legacy EKLT equation",
+          "[eklt_core]")
+{
+    const cv::Mat gradient_x = cv::Mat::ones(5, 5, CV_64F);
+    const cv::Mat gradient_y = cv::Mat::zeros(5, 5, CV_64F);
+    const double flow_angle = 0.0;
+    const double displacement_px = 0.6;
+    const int configured_limit = 300;
+
+    // The removed ROS1 implementation truncated the projected L1 energy to an
+    // integer, then clamped it between five and the configured ceiling.
+    const cv::Mat projected =
+        displacement_px * std::cos(flow_angle) * gradient_x +
+        displacement_px * std::sin(flow_angle) * gradient_y;
+    const int legacy_batch_size =
+        std::max(5, static_cast<int>(std::min(cv::norm(projected, cv::NORM_L1),
+                                              static_cast<double>(configured_limit))));
+    const int native_batch_size =
+        eklt_core::CPhotometricOptimizer::computeAdaptiveBatchSize(gradient_x, gradient_y,
+                                                                   flow_angle, displacement_px,
+                                                                   configured_limit);
+
+    CHECK(native_batch_size == legacy_batch_size);
+}

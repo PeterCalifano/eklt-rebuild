@@ -307,7 +307,8 @@ namespace eklt_core
 
     void CPhotometricOptimizer::precomputeGradientImage(const cv::Mat &image,
                                                         int64_t t_us,
-                                                        int ref_counter)
+                                                        int ref_counter,
+                                                        double log_eps)
     {
         // A cache without an owning patch could never receive a balanced
         // release, so reject it before allocating gradient storage.
@@ -323,12 +324,17 @@ namespace eklt_core
         {
             throw std::invalid_argument("photometric optimizer image must be non-empty and single-channel");
         }
+        if (!std::isfinite(log_eps) || log_eps <= 0.0)
+        {
+            throw std::invalid_argument(
+                "photometric optimizer log offset must be finite and positive");
+        }
 
         // Flatten the two gradient channels in row-major pixel order for Ceres
         // Grid2D interpolation.
         cv::Mat I_x;
         cv::Mat I_y;
-        computeLogGradients(image, &I_x, &I_y);
+        computeLogGradients(image, &I_x, &I_y, log_eps);
         std::vector<double> grad;
         grad.reserve(static_cast<std::size_t>(image.rows) *
                      static_cast<std::size_t>(image.cols) * 2U);
@@ -367,6 +373,11 @@ namespace eklt_core
             gradients_.erase(cache_it);
         }
         return true;
+    }
+
+    std::size_t CPhotometricOptimizer::gradientCacheCount() const
+    {
+        return gradients_.size();
     }
 
     bool CPhotometricOptimizer::optimize(const cv::Mat &event_frame,
@@ -431,7 +442,8 @@ namespace eklt_core
 
     void CPhotometricOptimizer::computeLogGradients(const cv::Mat &image,
                                                     cv::Mat *I_x,
-                                                    cv::Mat *I_y)
+                                                    cv::Mat *I_y,
+                                                    double log_eps)
     {
         // Null outputs and invalid source geometry cannot satisfy the two-plane
         // gradient contract.
@@ -439,7 +451,8 @@ namespace eklt_core
         {
             return;
         }
-        if (image.empty() || image.dims != 2 || image.channels() != 1)
+        if (image.empty() || image.dims != 2 || image.channels() != 1 ||
+            !std::isfinite(log_eps) || log_eps <= 0.0)
         {
             I_x->release();
             I_y->release();
@@ -450,7 +463,7 @@ namespace eklt_core
         // images produce gradients on the same intensity scale.
         cv::Mat log_image;
         const cv::Mat normalized_image = NormalizeImageToUnitRange64(image);
-        cv::log(normalized_image + 1e-2, log_image);
+        cv::log(normalized_image + log_eps, log_image);
         cv::Sobel(log_image / 8.0, *I_x, CV_64F, 1, 0, 3);
         cv::Sobel(log_image / 8.0, *I_y, CV_64F, 0, 1, 3);
     }

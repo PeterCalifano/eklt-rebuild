@@ -267,23 +267,31 @@ Each functional stage is a mandatory user-commit boundary:
       `master`.
 - [x] Preserve path filters and `verify_*` job names.
 - [x] Validate YAML, Bash, ShellCheck, Docker BuildKit, and focused diffs.
-- [ ] Stop for the user commit titled
+- [x] Stop for the user commit titled
       `Align CI with the C++17 Ceres build`.
 
 ## Stage 13 - Legacy ROS1 C++ integration
 
-- [ ] Review the tracker, optimizer, patch, viewer, flags, configuration,
+- [x] Review the tracker, optimizer, patch, viewer, flags, configuration,
       launch, and focused tests as one batch.
-- [ ] Co-locate ROS1 headers and implementations under `src/ros1/` while
+- [x] Co-locate ROS1 headers and implementations under `src/ros1/` while
       preserving installed catkin include names.
-- [ ] Adapt ROS1 tracking to the consolidated provider and photometric APIs.
-- [ ] Remove duplicate native computations only after regression parity is
+- [x] Move image/event scheduling, initialization, KLT/event bootstrap,
+      feature lifecycle, reinitialization, and track snapshots into one
+      ROS-free C++17 `*Orchestrator` API.
+- [x] Reduce ROS1 tracking to message conversion, transport/worker ownership,
+      track-file output, and topic publication through standard ROS tools.
+- [x] Adapt ROS1 tracking to the consolidated orchestrator API.
+- [x] Remove duplicate native computations only after regression parity is
       demonstrated.
-- [ ] Preserve frame-backed and event-only initialization, viewer output,
+- [x] Preserve frame-backed and event-only initialization, viewer output,
       parameters, and track files.
-- [ ] Release gradient caches whenever patches retire.
-- [ ] Use Catch2 and ROS1 CI evidence; no local ROS1 build is required.
-- [ ] Stop for the user commit titled
+- [x] Release gradient caches whenever patches retire.
+- [x] Keep native working state bounded: do not retain pre-initialization event
+      batches, exclude patch buffers and caches from snapshots, and bound the
+      ROS1 transport queue.
+- [x] Use Catch2 and ROS1 CI evidence; no local ROS1 build is required.
+- [x] Stop for the user commit titled
       `Integrate the ROS1 tracker with the native EKLT core`.
 
 ## Stage 14 - ROS2 event-only overlay
@@ -295,6 +303,9 @@ Each functional stage is a mandatory user-commit boundary:
 - [ ] Complete gradient-cache lifecycle handling.
 - [ ] Validate colcon, EventPacket decoding, deterministic tracking, non-empty
       output, and scripts.
+- [ ] Run the user-selected existing example through ROS2, converting its bag
+      to EventPacket-compatible ROS2 data when necessary, and notify the user
+      when it is ready for their first test.
 - [ ] Stop for the user commit titled
       `Add the ROS2 event-only EKLT overlay`.
 
@@ -363,8 +374,8 @@ Each functional stage is a mandatory user-commit boundary:
 | Stage | Status | Validation summary | Accepted commit |
 |---|---|---|---|
 | 11 - Product-native library consolidation | accepted | Exact-index shared/static Werror 33/33, installed consumers, Doxygen, one-library layout, source package, staged-byte parity, and live ROS2 build passed | `78bfa69e008dd65b695b1a4f8c8aa192ada2e3a9` |
-| 12 - CI and development environment | awaiting user commit | Exact-index workflow semantics, preserved filters and names, Bash, ShellCheck, BuildKit checks, and the Ubuntu 20.04 image build passed | pending |
-| 13 - Legacy ROS1 C++ integration | pending | Not run; requires accepted Stage 12 checkpoint | - |
+| 12 - CI and development environment | accepted | Exact-index workflow semantics, preserved filters and names, Bash, ShellCheck, BuildKit checks, and the Ubuntu 20.04 image build passed | `7ab4df431104a0c63939746ba7889299a3403746` |
+| 13 - Legacy ROS1 C++ integration | awaiting user commit | Exact-index shared/static Werror 41/41, Noetic catkin 49/49, installed consumers and legacy headers, launch/linkage checks, Doxygen, source packaging, structured/shell validation, and staged-byte parity passed | pending |
 | 14 - ROS2 event-only overlay | pending | Not run; requires accepted Stage 13 checkpoint | - |
 | 15 - Accepted wrapper build foundation | pending | Not run; requires accepted Stage 14 checkpoint | - |
 | 16 - Portable Python package | pending | Not run; requires accepted Stage 15 checkpoint | - |

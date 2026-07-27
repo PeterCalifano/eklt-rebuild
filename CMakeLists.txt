@@ -51,7 +51,7 @@ option(
 )
 set(SANITIZERS "address,undefined" CACHE STRING "Comma-separated sanitizer set")
 
-if(BUILD_AS_MAIN_PROJECT AND ENABLE_TESTS)
+if((BUILD_AS_MAIN_PROJECT OR EKLT_BUILD_ROS1) AND ENABLE_TESTS)
     include(CTest)
 endif()
 
@@ -112,9 +112,11 @@ if(ENABLE_CUDA)
     target_link_libraries(eklt_optional_dependencies INTERFACE eklt_cuda_options)
 endif()
 
-find_package(OpenCV 4 REQUIRED COMPONENTS core imgproc features2d)
+find_package(OpenCV 4 REQUIRED COMPONENTS core imgproc features2d video)
 find_package(Ceres REQUIRED)
-find_package(Eigen3 3.4 REQUIRED NO_MODULE)
+# ROS1 Noetic on Ubuntu Focal supplies Eigen 3.3.7. EKLT's adapter surface
+# uses the stable dense-vector API available at that version.
+find_package(Eigen3 3.3.7 REQUIRED NO_MODULE)
 
 # Normalize legacy Ceres find-module results to the imported target used by the
 # native library and its installed export.
@@ -133,52 +135,81 @@ endif()
 add_subdirectory(src)
 
 if(EKLT_BUILD_ROS1)
+    find_package(
+        catkin REQUIRED
+        COMPONENTS
+            cv_bridge
+            dvs_msgs
+            image_geometry
+            image_transport
+            roscpp
+            sensor_msgs
+    )
     find_package(catkin_simple REQUIRED)
-    catkin_simple(ALL_DEPS_REQUIRED)
+    # Resolve ROS packages explicitly above, then let catkin_simple ignore the
+    # package.xml rosdep keys already owned by plain-CMake dependency discovery.
+    catkin_simple()
 
+    # Co-locate the ROS1 compatibility surface and its implementation while
+    # teaching catkin_simple to preserve the historical global include names.
+    set(
+        ${PROJECT_NAME}_LOCAL_INCLUDE_DIR
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/ros1"
+    )
     set(EKLT_ROS1_HEADERS
-        include/error.h
-        include/flags.h
-        include/optimizer.h
-        include/patch.h
-        include/tracker.h
-        include/tracker_utils.h
-        include/types.h
-        include/viewer.h
+        src/ros1/error.h
+        src/ros1/flags.h
+        src/ros1/optimizer.h
+        src/ros1/patch.h
+        src/ros1/tracker.h
+        src/ros1/tracker_utils.h
+        src/ros1/types.h
+        src/ros1/viewer.h
     )
     set(EKLT_ROS1_SOURCES
-        src/flags.cpp
-        src/optimizer.cpp
-        src/tracker.cpp
-        src/viewer.cpp
+        src/ros1/flags.cpp
+        src/ros1/optimizer.cpp
+        src/ros1/patch.cpp
+        src/ros1/tracker.cpp
+        src/ros1/tracker_utils.cpp
+        src/ros1/viewer.cpp
     )
 
     cs_add_library(eklt ${EKLT_ROS1_SOURCES} ${EKLT_ROS1_HEADERS})
     target_compile_features(eklt PUBLIC cxx_std_17)
-    target_link_libraries(
+    target_include_directories(
         eklt
         PUBLIC
-            eklt_core
-            ${OpenCV_LIBRARIES}
-            ${catkin_LIBRARIES}
-        PRIVATE
-            eklt_compile_options
-            eklt_optional_dependencies
-            ${SANITIZER_TARGET}
-            ${PROFILING_COMPILE_TARGET}
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/ros1>
+            $<INSTALL_INTERFACE:${CATKIN_GLOBAL_INCLUDE_DESTINATION}>
     )
-    cs_add_executable(eklt_node src/eklt_node.cpp)
+    target_link_libraries(
+        eklt
+        eklt_core
+        ${catkin_LIBRARIES}
+        eklt_compile_options
+        eklt_optional_dependencies
+        ${SANITIZER_TARGET}
+        ${PROFILING_COMPILE_TARGET}
+    )
+    cs_add_executable(eklt_node src/ros1/eklt_node.cpp)
     target_compile_features(eklt_node PRIVATE cxx_std_17)
     target_link_libraries(
         eklt_node
-        PRIVATE eklt ${OpenCV_LIBRARIES} ${catkin_LIBRARIES}
+        eklt
+        ${catkin_LIBRARIES}
     )
 
+    install(
+        FILES config/eklt.conf
+        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
+    )
     cs_install()
     cs_export()
 endif()
 
-if(BUILD_AS_MAIN_PROJECT AND ENABLE_TESTS AND BUILD_TESTING)
+if((BUILD_AS_MAIN_PROJECT OR EKLT_BUILD_ROS1) AND
+   ENABLE_TESTS AND BUILD_TESTING)
     include(cmake/HandleCatch2.cmake)
     if(Catch2_FOUND)
         add_subdirectory(tests)
@@ -238,7 +269,6 @@ if(BUILD_AS_MAIN_PROJECT AND EKLT_BUILD_DOCS)
         MAIN_PAGE "${CMAKE_CURRENT_SOURCE_DIR}/doc/main_page.md"
         LAYOUT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/doc/DoxygenLayout.xml"
         INPUT_DIRS
-            "${CMAKE_CURRENT_SOURCE_DIR}/include"
             "${CMAKE_CURRENT_SOURCE_DIR}/src"
             "${CMAKE_CURRENT_SOURCE_DIR}/doc"
         EXCLUDE_DIRS
