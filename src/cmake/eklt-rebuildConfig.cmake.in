@@ -3,15 +3,22 @@
 
 include(CMakeFindDependencyMacro)
 find_dependency(OpenCV 4 COMPONENTS core imgproc features2d)
+find_dependency(Ceres)
 
-set(@LIB_NAMESPACE@_WITH_CERES @EKLT_CONFIG_WITH_CERES@)
+if(NOT TARGET Ceres::ceres)
+    add_library(Ceres::ceres INTERFACE IMPORTED)
+    set_target_properties(
+        Ceres::ceres
+        PROPERTIES
+            INTERFACE_INCLUDE_DIRECTORIES "${CERES_INCLUDE_DIRS}"
+            INTERFACE_LINK_LIBRARIES "${CERES_LIBRARIES}"
+    )
+endif()
+
+set(@LIB_NAMESPACE@_WITH_CERES ON)
 set(@LIB_NAMESPACE@_WITH_FIBAR ON)
 set(@LIB_NAMESPACE@_WITH_ADAPTERS ON)
 set(@LIB_NAMESPACE@_WITH_WRAPPER @EKLT_CONFIG_WITH_WRAPPER@)
-
-if(@LIB_NAMESPACE@_WITH_CERES)
-    find_dependency(Ceres)
-endif()
 
 find_dependency(fibar_lib)
 find_dependency(Eigen3 3.4)

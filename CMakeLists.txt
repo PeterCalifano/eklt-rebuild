@@ -78,10 +78,10 @@ include(cmake/HandleOpenGL.cmake)
 include(cmake/HandleCUDA.cmake)
 include(cmake/toolchains/HandleToolchain.cmake)
 
-handle_compiler_flags(CXX_STANDARD 11)
+handle_compiler_flags(CXX_STANDARD 17)
 
 add_library(eklt_compile_options INTERFACE)
-target_compile_features(eklt_compile_options INTERFACE cxx_std_11)
+target_compile_features(eklt_compile_options INTERFACE cxx_std_17)
 if(WARNINGS_ARE_ERRORS)
     target_compile_options(eklt_compile_options INTERFACE
         $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang,AppleClang>:-Werror>)
@@ -113,8 +113,20 @@ if(ENABLE_CUDA)
 endif()
 
 find_package(OpenCV 4 REQUIRED COMPONENTS core imgproc features2d)
-find_package(Ceres QUIET)
+find_package(Ceres REQUIRED)
 find_package(Eigen3 3.4 REQUIRED NO_MODULE)
+
+# Normalize legacy Ceres find-module results to the imported target used by the
+# native library and its installed export.
+if(NOT TARGET Ceres::ceres)
+    add_library(Ceres::ceres INTERFACE IMPORTED)
+    set_target_properties(
+        Ceres::ceres
+        PROPERTIES
+            INTERFACE_INCLUDE_DIRECTORIES "${CERES_INCLUDE_DIRS}"
+            INTERFACE_LINK_LIBRARIES "${CERES_LIBRARIES}"
+    )
+endif()
 
 # Match the parent-template ownership boundary: the root configures policies
 # and dependencies, while src/ owns libraries, installation, and exports.
@@ -142,7 +154,7 @@ if(EKLT_BUILD_ROS1)
     )
 
     cs_add_library(eklt ${EKLT_ROS1_SOURCES} ${EKLT_ROS1_HEADERS})
-    target_compile_features(eklt PUBLIC cxx_std_11)
+    target_compile_features(eklt PUBLIC cxx_std_17)
     target_link_libraries(
         eklt
         PUBLIC
@@ -155,12 +167,8 @@ if(EKLT_BUILD_ROS1)
             ${SANITIZER_TARGET}
             ${PROFILING_COMPILE_TARGET}
     )
-    # Keep the C++17 native-library requirement private so ROS1 consumers
-    # retain the original C++11-facing target contract.
-    target_link_libraries(eklt PRIVATE ${LIB_TARGET_NAME})
-
     cs_add_executable(eklt_node src/eklt_node.cpp)
-    target_compile_features(eklt_node PRIVATE cxx_std_11)
+    target_compile_features(eklt_node PRIVATE cxx_std_17)
     target_link_libraries(
         eklt_node
         PRIVATE eklt ${OpenCV_LIBRARIES} ${catkin_LIBRARIES}
@@ -257,7 +265,7 @@ if(BUILD_AS_MAIN_PROJECT)
         CPACK_SOURCE_IGNORE_FILES
         "^${_eklt_source_root_regex}/(.*/)?\\.git(/|$)"
         "^${_eklt_source_root_regex}/(.*/)?build[^/]*/"
-        "^${_eklt_source_root_regex}/(.*/)?install/"
+        "^${_eklt_source_root_regex}/(.*/)?install[^/]*/"
         "^${_eklt_source_root_regex}/ros2/(build|install|log)/"
         "^${_eklt_source_root_regex}/(data|outputs|logs?|devel)/"
         "^${_eklt_source_root_regex}/(\\.catkin_tools|\\.codex)/"

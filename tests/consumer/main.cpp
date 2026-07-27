@@ -3,16 +3,13 @@
 
 #include <eklt_core/image_normalization.h>
 #include <eklt_core/initialization_providers.h>
+#include <eklt_core/photometric_patch_tracker.h>
 #include <event_recon_fibar_adapters/fibar_adapters.h>
 #include <event_recon_fibar_core/fibar_reconstructor.h>
 
-#ifdef EKLT_CONSUMER_WITH_CERES
-#include <eklt_core/photometric_patch_tracker.h>
-#endif
-
 static_assert(
     __cplusplus >= 201703L,
-    "The installed native target must publish its C++17 requirement");
+    "Every installed EKLT C++ target must publish the C++17 baseline");
 
 int main()
 {

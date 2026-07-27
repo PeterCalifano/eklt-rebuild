@@ -20,10 +20,9 @@ namespace event_recon_fibar_adapters
         template <typename TInteger>
         TInteger CheckedInteger(double value, const char *label)
         {
-            static_assert(
-                std::numeric_limits<TInteger>::is_integer &&
-                    std::numeric_limits<TInteger>::radix == 2,
-                "FIBAR adapters require binary integer destination types");
+            static_assert(std::numeric_limits<TInteger>::is_integer &&
+                              std::numeric_limits<TInteger>::radix == 2,
+                          "FIBAR adapters require binary integer destination types");
 
             const double upper_bound = std::ldexp(
                 1.0, std::numeric_limits<TInteger>::digits);
@@ -34,8 +33,8 @@ namespace event_recon_fibar_adapters
                 integral_value < value || integral_value > value ||
                 value < lower_bound || value >= upper_bound)
             {
-                throw std::invalid_argument(
-                    std::string(label) + " values must be finite in-range integers");
+                throw std::invalid_argument(std::string(label) +
+                                            " values must be finite in-range integers");
             }
             return static_cast<TInteger>(value);
         }
@@ -92,6 +91,23 @@ namespace event_recon_fibar_adapters
             }
         }
 
+        /// @brief Map the convenience constructor arguments to the native contract.
+        /// @return Validatable native FIBAR configuration.
+        event_recon_fibar_core::SFibarConfig MakeCoreConfig(int width,
+                                                           int height,
+                                                           uint32_t cutoff_time_us,
+                                                           double fill_ratio,
+                                                           bool use_spatial_filter)
+        {
+            event_recon_fibar_core::SFibarConfig config;
+            config.width = width;
+            config.height = height;
+            config.cutoff_time_us = cutoff_time_us;
+            config.fill_ratio = fill_ratio;
+            config.use_spatial_filter = use_spatial_filter;
+            return config;
+        }
+
         gtsam::Matrix ValuesToMatrix(const std::vector<float> &values, int width, int height)
         {
             gtsam::Matrix output(height, width);
@@ -113,8 +129,7 @@ namespace event_recon_fibar_adapters
 
     CLocalFeaturePatchAdapter::CLocalFeaturePatchAdapter() = default;
 
-    CLocalFeaturePatchAdapter::CLocalFeaturePatchAdapter(
-        const event_recon_fibar_core::SLocalFeaturePatch &patch)
+    CLocalFeaturePatchAdapter::CLocalFeaturePatchAdapter(const event_recon_fibar_core::SLocalFeaturePatch &patch)
         : patch_(patch)
     {
         ValidatePatch(patch_);
@@ -193,40 +208,25 @@ namespace event_recon_fibar_adapters
         return static_cast<double>(patch_.gradient_energy);
     }
 
-    CFibarReconstructorAdapter::CFibarReconstructorAdapter(
-        int width,
-        int height,
-        uint32_t cutoff_time_us,
-        double fill_ratio,
-        bool use_spatial_filter)
+    CFibarReconstructorAdapter::CFibarReconstructorAdapter(int width,
+                                                           int height,
+                                                           uint32_t cutoff_time_us,
+                                                           double fill_ratio,
+                                                           bool use_spatial_filter)
+        : reconstructor_(MakeCoreConfig(width, height, cutoff_time_us,
+                                        fill_ratio, use_spatial_filter))
     {
-        // Map the convenience constructor directly onto the validated native
-        // configuration contract.
-        event_recon_fibar_core::SFibarConfig core_config;
-        core_config.width = width;
-        core_config.height = height;
-        core_config.cutoff_time_us = cutoff_time_us;
-        core_config.fill_ratio = fill_ratio;
-        core_config.use_spatial_filter = use_spatial_filter;
-        reconstructor_.reset(new event_recon_fibar_core::CFibarReconstructor(core_config));
     }
-
-    CFibarReconstructorAdapter::~CFibarReconstructorAdapter() = default;
-    CFibarReconstructorAdapter::CFibarReconstructorAdapter(
-        CFibarReconstructorAdapter &&other) noexcept = default;
-    CFibarReconstructorAdapter &CFibarReconstructorAdapter::operator=(
-        CFibarReconstructorAdapter &&other) noexcept = default;
 
     void CFibarReconstructorAdapter::reset()
     {
-        reconstructor_->reset();
+        reconstructor_.reset();
     }
 
-    void CFibarReconstructorAdapter::acceptEvent(
-        uint16_t x,
-        uint16_t y,
-        int8_t polarity,
-        int64_t t_us)
+    void CFibarReconstructorAdapter::acceptEvent(uint16_t x,
+                                                 uint16_t y,
+                                                 int8_t polarity,
+                                                 int64_t t_us)
     {
         const event_recon_fibar_core::SEventBatchView batch{
             &x,
@@ -237,14 +237,13 @@ namespace event_recon_fibar_adapters
             width(),
             height(),
         };
-        reconstructor_->acceptEvents(batch);
+        reconstructor_.acceptEvents(batch);
     }
 
-    void CFibarReconstructorAdapter::acceptEvents(
-        const gtsam::Vector &x,
-        const gtsam::Vector &y,
-        const gtsam::Vector &polarity,
-        const gtsam::Vector &t_us)
+    void CFibarReconstructorAdapter::acceptEvents(const gtsam::Vector &x,
+                                                  const gtsam::Vector &y,
+                                                  const gtsam::Vector &polarity,
+                                                  const gtsam::Vector &t_us)
     {
         if (y.size() != x.size() || polarity.size() != x.size() || t_us.size() != x.size())
         {
@@ -275,13 +274,13 @@ namespace event_recon_fibar_adapters
             width(),
             height(),
         };
-        reconstructor_->acceptEvents(batch);
+        reconstructor_.acceptEvents(batch);
     }
 
     gtsam::Matrix CFibarReconstructorAdapter::requestImage(int64_t t_us) const
     {
         const event_recon_fibar_core::SReconstructedImageView image =
-            reconstructor_->requestImage(t_us);
+            reconstructor_.requestImage(t_us);
 
         // Copy the non-owning row-major native image into caller-owned Eigen
         // storage before the native view can be invalidated.
@@ -301,29 +300,30 @@ namespace event_recon_fibar_adapters
         return output;
     }
 
-    CLocalFeaturePatchAdapter CFibarReconstructorAdapter::requestPatch(
-        int center_x,
-        int center_y,
-        int radius,
-        int64_t t_us) const
+    CLocalFeaturePatchAdapter CFibarReconstructorAdapter::requestPatch(int center_x,
+                                                                       int center_y,
+                                                                       int radius,
+                                                                       int64_t t_us) const
     {
-        return CLocalFeaturePatchAdapter(
-            reconstructor_->requestPatch(center_x, center_y, radius, t_us));
+        return CLocalFeaturePatchAdapter(reconstructor_.requestPatch(center_x,
+                                                                     center_y,
+                                                                     radius,
+                                                                     t_us));
     }
 
     int CFibarReconstructorAdapter::width() const
     {
-        return reconstructor_->width();
+        return reconstructor_.width();
     }
 
     int CFibarReconstructorAdapter::height() const
     {
-        return reconstructor_->height();
+        return reconstructor_.height();
     }
 
     int64_t CFibarReconstructorAdapter::latestTimestampUs() const
     {
-        return reconstructor_->latestTimestampUs();
+        return reconstructor_.latestTimestampUs();
     }
 
 } // namespace event_recon_fibar_adapters

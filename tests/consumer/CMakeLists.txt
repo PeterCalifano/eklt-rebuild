@@ -9,18 +9,18 @@ add_executable(eklt_rebuild_installed_consumer main.cpp)
 set_target_properties(
     eklt_rebuild_installed_consumer
     PROPERTIES
-        CXX_STANDARD 11
+        CXX_STANDARD 17
         CXX_STANDARD_REQUIRED YES
         CXX_EXTENSIONS NO
 )
 target_link_libraries(
     eklt_rebuild_installed_consumer
     PRIVATE
-        eklt_rebuild::eklt_core
         eklt_rebuild::eklt-rebuild
 )
 
 foreach(required_target IN ITEMS
+        eklt_rebuild::eklt_core
         eklt_rebuild::event_recon_fibar_core
         eklt_rebuild::event_recon_fibar_adapters)
     if(NOT TARGET "${required_target}")
@@ -28,14 +28,9 @@ foreach(required_target IN ITEMS
     endif()
 endforeach()
 
-if(NOT eklt_rebuild_WITH_FIBAR OR NOT eklt_rebuild_WITH_ADAPTERS)
+if(NOT eklt_rebuild_WITH_CERES OR
+   NOT eklt_rebuild_WITH_FIBAR OR
+   NOT eklt_rebuild_WITH_ADAPTERS)
     message(FATAL_ERROR
-        "The installed native library must expose FIBAR and adapter APIs")
-endif()
-
-if(eklt_rebuild_WITH_CERES)
-    target_compile_definitions(
-        eklt_rebuild_installed_consumer
-        PRIVATE EKLT_CONSUMER_WITH_CERES=1
-    )
+        "The installed native library must expose Ceres, FIBAR, and adapter APIs")
 endif()

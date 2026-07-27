@@ -1,7 +1,8 @@
 /// @file GtsamAliases.h
 /// @brief Provides the minimal Eigen-backed aliases expected by gtwrap.
-/// @details EKLT does not require GTSAM; these aliases preserve gtwrap's
-///          conventional matrix and vector spellings at the wrapper boundary.
+/// @details Co-located with the native adapter implementation, this header
+///          preserves gtwrap's conventional matrix and vector spellings
+///          without requiring GTSAM.
 
 #ifndef EVENT_RECON_FIBAR_ADAPTERS_GTSAM_ALIASES_H_
 #define EVENT_RECON_FIBAR_ADAPTERS_GTSAM_ALIASES_H_

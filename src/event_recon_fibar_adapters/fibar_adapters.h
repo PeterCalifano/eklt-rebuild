@@ -1,14 +1,15 @@
 /// @file fibar_adapters.h
 /// @brief Declares Eigen-backed convenience adapters for FIBAR reconstruction.
-/// @details These C++ APIs coordinate array conversion for native and
-///          generated-language callers without exposing ROS types.
+/// @details Co-located with their implementation, these C++ APIs coordinate
+///          array conversion for native and generated-language callers without
+///          exposing ROS types. Installed consumers retain the
+///          `<event_recon_fibar_adapters/...>` include spelling.
 
 #ifndef EVENT_RECON_FIBAR_ADAPTERS_FIBAR_ADAPTERS_H_
 #define EVENT_RECON_FIBAR_ADAPTERS_FIBAR_ADAPTERS_H_
 
 #include <cstddef>
 #include <cstdint>
-#include <memory>
 
 #include "event_recon_fibar_adapters/GtsamAliases.h"
 #include "event_recon_fibar_core/fibar_reconstructor.h"
@@ -29,8 +30,7 @@ namespace event_recon_fibar_adapters
         /// @param patch Native patch to adapt.
         /// @throws std::invalid_argument If patch geometry, storage, or quality
         ///         metadata violates the native patch contract.
-        explicit CLocalFeaturePatchAdapter(
-            const event_recon_fibar_core::SLocalFeaturePatch &patch);
+        explicit CLocalFeaturePatchAdapter(const event_recon_fibar_core::SLocalFeaturePatch &patch);
 
         /// @return Number of intensity samples in the patch.
         std::size_t size() const;
@@ -62,9 +62,10 @@ namespace event_recon_fibar_adapters
         event_recon_fibar_core::SLocalFeaturePatch patch_;
     };
 
-    /**
-     * @brief Adapts Eigen event arrays and images to the typed FIBAR core API.
-     */
+    /// @brief Adapts Eigen event arrays and images to the typed FIBAR core API.
+    /// @details Owns the native reconstructor directly. gtwrap exposes only this
+    ///          class's public conversion and orchestration methods. Native
+    ///          filter ownership makes the adapter move-only.
     class CFibarReconstructorAdapter
     {
       public:
@@ -76,30 +77,11 @@ namespace event_recon_fibar_adapters
         /// @param use_spatial_filter Enable the upstream spatial filter.
         /// @throws std::invalid_argument If the native FIBAR configuration is
         ///         invalid.
-        CFibarReconstructorAdapter(
-            int width,
-            int height,
-            uint32_t cutoff_time_us,
-            double fill_ratio,
-            bool use_spatial_filter);
-
-        /// @brief Destroy this adapter and its owned native reconstructor.
-        ~CFibarReconstructorAdapter();
-
-        /// @brief Transfer ownership from another adapter.
-        /// @param other Adapter whose native reconstructor is transferred.
-        CFibarReconstructorAdapter(CFibarReconstructorAdapter &&other) noexcept;
-
-        /// @brief Transfer ownership from another adapter.
-        /// @param other Adapter whose native reconstructor is transferred.
-        /// @return This adapter after taking ownership.
-        CFibarReconstructorAdapter &operator=(CFibarReconstructorAdapter &&other) noexcept;
-
-        /// @brief Disable copying because each adapter exclusively owns its state.
-        CFibarReconstructorAdapter(const CFibarReconstructorAdapter &) = delete;
-
-        /// @brief Disable copying because each adapter exclusively owns its state.
-        CFibarReconstructorAdapter &operator=(const CFibarReconstructorAdapter &) = delete;
+        CFibarReconstructorAdapter(int width,
+                                   int height,
+                                   uint32_t cutoff_time_us,
+                                   double fill_ratio,
+                                   bool use_spatial_filter);
 
         /// @brief Clear all accepted events while preserving configuration.
         void reset();
@@ -123,11 +105,10 @@ namespace event_recon_fibar_adapters
         ///         invalid.
         /// @throws std::out_of_range If an event lies outside the sensor.
         /// @throws std::runtime_error If the native relative timestamp overflows.
-        void acceptEvents(
-            const gtsam::Vector &x,
-            const gtsam::Vector &y,
-            const gtsam::Vector &polarity,
-            const gtsam::Vector &t_us);
+        void acceptEvents(const gtsam::Vector &x,
+                          const gtsam::Vector &y,
+                          const gtsam::Vector &polarity,
+                          const gtsam::Vector &t_us);
 
         /// @brief Copy the latest causal reconstruction into an Eigen matrix.
         /// @param t_us Requested absolute timestamp in microseconds.
@@ -143,11 +124,10 @@ namespace event_recon_fibar_adapters
         /// @return Adapter-owned patch.
         /// @throws std::invalid_argument If the radius cannot form a valid patch.
         /// @throws std::runtime_error If no causal image exists.
-        CLocalFeaturePatchAdapter requestPatch(
-            int center_x,
-            int center_y,
-            int radius,
-            int64_t t_us) const;
+        CLocalFeaturePatchAdapter requestPatch(int center_x,
+                                               int center_y,
+                                               int radius,
+                                               int64_t t_us) const;
 
         /// @return Configured sensor width in pixels.
         int width() const;
@@ -157,7 +137,7 @@ namespace event_recon_fibar_adapters
         int64_t latestTimestampUs() const;
 
       private:
-        std::unique_ptr<event_recon_fibar_core::CFibarReconstructor> reconstructor_;
+        event_recon_fibar_core::CFibarReconstructor reconstructor_;
     };
 
 } // namespace event_recon_fibar_adapters

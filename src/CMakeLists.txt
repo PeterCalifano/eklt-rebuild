@@ -9,21 +9,19 @@
 set(EKLT_INSTALL_CORE_HEADERS
     "${CMAKE_CURRENT_SOURCE_DIR}/eklt_core/image_normalization.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/eklt_core/initialization_providers.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/eklt_core/photometric_patch_tracker.h"
 )
-set(EKLT_CONFIG_WITH_CERES OFF)
-if(Ceres_FOUND AND TARGET Ceres::ceres)
-    list(APPEND
-        EKLT_INSTALL_CORE_HEADERS
-        "${CMAKE_CURRENT_SOURCE_DIR}/eklt_core/photometric_patch_tracker.h"
-    )
-    set(EKLT_CONFIG_WITH_CERES ON)
-endif()
+set(EKLT_CORE_SOURCES
+    eklt_core/image_normalization.cpp
+    eklt_core/initialization_providers.cpp
+    eklt_core/photometric_patch_tracker.cpp
+)
 
-# Publish the header-only provider and photometric interfaces independently of
-# ROS while retaining the original C++11 compatibility floor.
+# Publish the provider and photometric interfaces independently of ROS with the
+# same C++17 baseline as the complete native implementation.
 add_library(eklt_core INTERFACE)
 add_library(${LIB_NAMESPACE}::eklt_core ALIAS eklt_core)
-target_compile_features(eklt_core INTERFACE cxx_std_11)
+target_compile_features(eklt_core INTERFACE cxx_std_17)
 target_include_directories(
     eklt_core
     INTERFACE
@@ -38,9 +36,6 @@ target_link_libraries(
         $<BUILD_INTERFACE:eklt_optional_dependencies>
         $<BUILD_INTERFACE:${SANITIZER_TARGET}>
 )
-if(EKLT_CONFIG_WITH_CERES)
-    target_link_libraries(eklt_core INTERFACE Ceres::ceres)
-endif()
 if(PROFILING_PROPAGATES_TO_CONSUMERS)
     target_link_libraries(eklt_core INTERFACE ${PROFILING_COMPILE_TARGET})
 else()
@@ -82,9 +77,10 @@ if(NOT TARGET fibar_lib::fibar_lib)
 endif()
 
 # Compile the native facade and Eigen adapter into one published library while
-# retaining their distinct header directories and C++ namespaces.
+# retaining their distinct component directories and C++ namespaces.
 add_library(
     ${LIB_TARGET_NAME}
+    ${EKLT_CORE_SOURCES}
     event_recon_fibar_core/fibar_reconstructor.cpp
     event_recon_fibar_adapters/fibar_adapters.cpp
 )
@@ -111,7 +107,6 @@ target_include_directories(
     ${LIB_TARGET_NAME}
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 target_include_directories(
@@ -122,9 +117,11 @@ target_include_directories(
 target_link_libraries(
     ${LIB_TARGET_NAME}
     PUBLIC
-        fibar_lib::fibar_lib
+        Ceres::ceres
         Eigen3::Eigen
+        ${OpenCV_LIBRARIES}
     PRIVATE
+        fibar_lib::fibar_lib
         $<BUILD_INTERFACE:eklt_compile_options>
         $<BUILD_INTERFACE:eklt_optional_dependencies>
         $<BUILD_INTERFACE:${SANITIZER_TARGET}>
@@ -141,6 +138,13 @@ else()
     )
 endif()
 list(APPEND EKLT_INSTALL_TARGETS ${LIB_TARGET_NAME})
+
+# Resolve core API definitions and their complete C++17 dependency surface from
+# the same published binary.
+target_link_libraries(
+    eklt_core
+    INTERFACE ${LIB_TARGET_NAME}
+)
 
 if(EKLT_BUILD_PYTHON OR EKLT_BUILD_MATLAB)
     set(EKLT_CONFIG_WITH_WRAPPER ON)
@@ -168,8 +172,8 @@ install(
 )
 install(
     FILES
-        "${PROJECT_SOURCE_DIR}/include/event_recon_fibar_adapters/GtsamAliases.h"
-        "${PROJECT_SOURCE_DIR}/include/event_recon_fibar_adapters/fibar_adapters.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/event_recon_fibar_adapters/GtsamAliases.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/event_recon_fibar_adapters/fibar_adapters.h"
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/event_recon_fibar_adapters
 )
 install(

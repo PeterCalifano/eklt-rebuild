@@ -5,14 +5,8 @@ set(EKLT_ROS_FREE_TESTS
     test_eklt_core_providers
     test_event_recon_fibar_core
     test_event_recon_fibar_adapters
+    test_eklt_core_photometric
 )
-
-find_package(Ceres QUIET)
-if(Ceres_FOUND)
-    list(APPEND EKLT_ROS_FREE_TESTS test_eklt_core_photometric)
-else()
-    message(STATUS "Ceres not found: skipping test_eklt_core_photometric")
-endif()
 
 foreach(test_target IN LISTS EKLT_ROS_FREE_TESTS)
     add_executable(${test_target} ${test_target}.cpp)
@@ -25,16 +19,9 @@ foreach(test_target IN LISTS EKLT_ROS_FREE_TESTS)
     )
 
     if(test_target STREQUAL "test_event_recon_fibar_core" OR
-       test_target STREQUAL "test_event_recon_fibar_adapters")
+       test_target STREQUAL "test_event_recon_fibar_adapters" OR
+       test_target STREQUAL "test_eklt_core_photometric")
         target_link_libraries(${test_target} PRIVATE ${LIB_TARGET_NAME})
-    elseif(test_target STREQUAL "test_eklt_core_photometric")
-        target_link_libraries(${test_target} PRIVATE eklt_core)
-        if(TARGET Ceres::ceres)
-            target_link_libraries(${test_target} PRIVATE Ceres::ceres)
-        else()
-            target_include_directories(${test_target} PRIVATE ${CERES_INCLUDE_DIRS})
-            target_link_libraries(${test_target} PRIVATE ${CERES_LIBRARIES})
-        endif()
     else()
         target_link_libraries(${test_target} PRIVATE eklt_core)
     endif()
@@ -49,7 +36,7 @@ endforeach()
 if(EKLT_BUILD_ROS1 AND TARGET eklt)
     foreach(test_target IN ITEMS test_patch test_tracker_utils)
         add_executable(${test_target} ${test_target}.cpp)
-        target_compile_features(${test_target} PRIVATE cxx_std_11)
+        target_compile_features(${test_target} PRIVATE cxx_std_17)
         target_include_directories(
             ${test_target}
             PRIVATE

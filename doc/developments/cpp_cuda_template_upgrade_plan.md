@@ -30,7 +30,7 @@ from an uncommitted parent-template baseline.
 |---|---|---|
 | Identity | Published CMake library/package `eklt-rebuild`; identifier-constrained CMake/ROS/Python name `eklt_rebuild`; utility package `event_vision_utils` | Names flow from the root project without invalid hyphenated identifiers |
 | Architecture | ROS1 frame-backed tracker plus alternative event-only path | Existing and event-only tests remain green |
-| Native API | One `libeklt-rebuild` containing `event_recon_fibar_core` and `event_recon_fibar_adapters`, plus the header-only `eklt_core` seam | Shared/static builds, one-binary artifact check, and installed consumer |
+| Native API | One `libeklt-rebuild` containing the compiled `eklt_core`, `event_recon_fibar_core`, and `event_recon_fibar_adapters` implementations | Shared/static builds, one-binary artifact check, and installed consumer |
 | Wrappers | Optional Python/MATLAB generation over the always-built C++ adapter API | Python equivalence, relocated-wheel import, and MATLAB R2024b tests |
 | ROS | ROS1 reference; ROS2 event-only experimental overlay | Independent catkin/colcon entrypoints |
 | Removed features | OptiX, PTX, ZeroMQ | No active options, dependencies, or root-helper usage; inherited helpers stay immutable |
@@ -42,7 +42,8 @@ from an uncommitted parent-template baseline.
 - [x] Export canonical `eklt_rebuild::eklt-rebuild` and logical
       `event_recon_fibar_core`/`event_recon_fibar_adapters` API targets without
       publishing separate FIBAR binaries.
-- [x] Keep ROS1 C++11 compatibility and C++17 for FIBAR/wrappers/ROS2.
+- [x] Use C++17 consistently for ROS1, the ROS-free native library, FIBAR,
+      wrappers, and ROS2.
 - [x] Add install, package-config, CPack, Doxygen, and consumer support.
 - [x] Upgrade the Catch2 integration to v3.
 
@@ -132,8 +133,8 @@ Acceptance evidence is recorded in
 - [x] Use loader-relative runtime paths and exclude absolute build-link
       metadata from distributable Python packages.
 - [x] Install only headers owned by configured plain-CMake targets.
-- [x] Export Eigen for the always-installed native adapter headers and Ceres
-      only when the Ceres-backed photometric header is installed.
+- [x] Require and export Eigen and Ceres for the always-installed native
+      adapter and photometric header surfaces.
 - [x] Leave ROS1 headers under the catkin package install contract.
 - [x] Compile and run default and wrapper-enabled installed consumers against
       all advertised headers.
@@ -169,8 +170,14 @@ Acceptance evidence is recorded in
       `lib/fibar_lib` checkout and Eigen.
 - [x] Compile the FIBAR facade and Eigen-backed adapters/orchestrators into the
       same physical `libeklt-rebuild` shared or static library.
-- [x] Preserve separate source/header directories and the
-      `event_recon_fibar_core` and `event_recon_fibar_adapters` C++ namespaces.
+- [x] Preserve separate `event_recon_fibar_core` and
+      `event_recon_fibar_adapters` component directories and C++ namespaces.
+- [x] Co-locate the native adapter headers with their implementation under
+      `src/event_recon_fibar_adapters/` while preserving installed
+      `<event_recon_fibar_adapters/...>` include spellings.
+- [x] Remove the legacy repository-root `include/` directory from the native
+      target's build interface; the independent ROS1 target continues to own
+      its legacy headers.
 - [x] Build the adapter/facade convenience API in ordinary native builds,
       independently of Python or MATLAB wrapper-generation options.
 - [x] Publish `eklt_rebuild::eklt-rebuild` as the canonical CMake target while
@@ -181,8 +188,16 @@ Acceptance evidence is recorded in
       and packages one project-owned runtime library.
 - [x] Remove the obsolete core-only CI matrix and make native facade/adapter
       Catch2 and installed-consumer coverage unconditional.
-- [x] Keep ROS1, ROS2, profiling, shared/static builds, Ceres-backed
-      photometric APIs, documentation, and generated wrappers available.
+- [x] Keep ROS1, ROS2, profiling, shared/static builds, documentation, and
+      generated wrappers available while making Ceres required by the complete
+      native tracking library.
+- [x] Own Ceres solver options and gradient caches directly in
+      `CPhotometricOptimizer`; do not retain a PIMPL solely to hide a required
+      dependency.
+- [x] Preserve reference-counted release of timestamped gradient caches so
+      repeated feature reinitialization does not retain obsolete full images.
+- [x] Keep FIBAR as a supporting EKLT implementation in the same native
+      library rather than an independently usable product.
 
 ### Deliberate donor-template discrepancies
 
@@ -203,22 +218,18 @@ Acceptance evidence is recorded in
 - [ ] Refresh historical acceptance text that names separate
       `libevent_recon_fibar_core` and `libevent_recon_fibar_adapters`
       artifacts; those names are superseded by the one-library decision.
-- [ ] Review and stage reconstruction/tracking algorithm implementations only
-      in a later source batch; this consolidation must not edit them.
+- [ ] Review legacy ROS1 reconstruction/tracking algorithm changes only in a
+      later source batch; this consolidation must not edit
+      `src/optimizer.cpp` or `src/tracker.cpp`.
 
 ### Consolidation acceptance gates
 
-- [x] Live dirty-worktree shared and static builds produce only
-      `libeklt-rebuild` and pass 26/26 native tests with
-      `WARNINGS_ARE_ERRORS=ON`.
-- [x] Live shared and static installs configure, build, and run the external
-      consumer through the canonical target and both logical API views.
-- [x] Construct an isolated tree from the Git index, verify byte parity for
-      every staged path, and confirm its only configure blocker is the
-      deliberately deferred FIBAR algorithm source.
-- [ ] Repeat shared/static build, install, artifact, and consumer gates after
-      the later algorithm-source batch makes the isolated Git-index snapshot
-      self-contained.
+- [x] The isolated Git-index snapshot produces only `libeklt-rebuild` and
+      passes 33/33 native tests in shared and static Werror builds.
+- [x] Isolated shared and static installs configure, build, and run the
+      external consumer through the canonical target and logical API views.
+- [x] Construct an isolated tree from the Git index, add only the pinned
+      `lib/fibar_lib` commit, and verify byte parity for every staged path.
 - [x] Run the ROS2 Jazzy overlay against the consolidated canonical target; no
       local ROS1 build/test is required for this review.
 - [x] Run Doxygen warnings-as-errors, workflow/structured-file parsing, Bash
@@ -227,7 +238,136 @@ Acceptance evidence is recorded in
 - [x] Complete the final whole-index reader review required by `AGENTS.md`
       before presenting the staged set for commit review.
 
-Stop condition: do not begin Python/MATLAB implementation. Keep algorithm
-implementation files unedited and unstaged in this batch; repeat the full
-isolated-index build once their later source batch makes the snapshot
-self-contained.
+Stop condition: do not begin Python/MATLAB implementation or legacy ROS1
+algorithm consolidation. Keep later changes to `src/optimizer.cpp`,
+`src/tracker.cpp`, and related ROS integration files unstaged.
+
+## Checkpoint protocol for remaining stages
+
+Each functional stage is a mandatory user-commit boundary:
+
+- [ ] Reconcile `HEAD`, upstream, index, worktree, submodules, and inherited
+      helper provenance before starting the stage.
+- [ ] Work only on the current stage; do not edit or pre-stage later-stage
+      files.
+- [ ] Update this checklist and the ignored `CONTEXT.md` with validation
+      evidence.
+- [ ] Review the complete index and validate an isolated exact-index snapshot.
+- [ ] Report findings, staged paths, remaining work, commit title, and
+      description.
+- [ ] Stop without committing and wait for the user to commit and say `next`.
+- [ ] On `next`, confirm the index is clear, record the accepted commit hash in
+      the checkpoint ledger, and only then begin the following stage.
+
+## Stage 12 - CI and development environment
+
+- [ ] Stage only the Ceres-aware devcontainer setup and the four standard
+      workflows.
+- [ ] Run workflows only for pull requests targeting `master` and pushes to
+      `master`.
+- [ ] Preserve path filters and `verify_*` job names.
+- [ ] Validate YAML, Bash, ShellCheck, Docker BuildKit, and focused diffs.
+- [ ] Stop for the user commit titled
+      `Align CI with the C++17 Ceres build`.
+
+## Stage 13 - Legacy ROS1 C++ integration
+
+- [ ] Review the tracker, optimizer, patch, viewer, flags, configuration,
+      launch, and focused tests as one batch.
+- [ ] Co-locate ROS1 headers and implementations under `src/ros1/` while
+      preserving installed catkin include names.
+- [ ] Adapt ROS1 tracking to the consolidated provider and photometric APIs.
+- [ ] Remove duplicate native computations only after regression parity is
+      demonstrated.
+- [ ] Preserve frame-backed and event-only initialization, viewer output,
+      parameters, and track files.
+- [ ] Release gradient caches whenever patches retire.
+- [ ] Use Catch2 and ROS1 CI evidence; no local ROS1 build is required.
+- [ ] Stop for the user commit titled
+      `Integrate the ROS1 tracker with the native EKLT core`.
+
+## Stage 14 - ROS2 event-only overlay
+
+- [ ] Stage the `eklt_rebuild` package, event-only configuration, scripts, and
+      directly related documentation.
+- [ ] Link the canonical native target without recompiling its sources.
+- [ ] Keep ROS2 transport and parameters confined to the overlay.
+- [ ] Complete gradient-cache lifecycle handling.
+- [ ] Validate colcon, EventPacket decoding, deterministic tracking, non-empty
+      output, and scripts.
+- [ ] Stop for the user commit titled
+      `Add the ROS2 event-only EKLT overlay`.
+
+## Stage 15 - Accepted wrapper build foundation
+
+- [ ] Record the resolved parent blocker at `v1.12.0`, commit
+      `b277e4b84e2f1e501d6c2e73370efe0ecd101f23`.
+- [ ] Sync `HandleWrapper.cmake` byte-for-byte from that commit; the expected
+      blob is `367b6c3a226dc6fb64e35f471dfb5cd63b43262c`.
+- [ ] Stage the pinned read-only `lib/wrap` integration,
+      `wrap_interfaces/`, and project wrapper CMake configuration.
+- [ ] Generate wrappers against the canonical target without staging generated
+      output.
+- [ ] Stop for the user commit titled
+      `Align generated-wrapper support with template v1.12.0`.
+
+## Stage 16 - Portable Python package
+
+- [ ] Publish the identifier-safe `eklt_rebuild` package while preserving its
+      established API.
+- [ ] Package only explicit target-derived runtime artifacts.
+- [ ] Use `$ORIGIN`; omit `_wrapper_build.py`, caches, and bytecode.
+- [ ] Validate wrapper CTest, Python tests, wheel contents, CMake installation,
+      and relocated import with an empty `LD_LIBRARY_PATH`.
+- [ ] Stop for the user commit titled
+      `Package a relocatable eklt_rebuild Python wrapper`.
+
+## Stage 17 - MATLAB R2024b wrapper
+
+- [ ] Generate MATLAB bindings from the shared declarations and canonical
+      native target.
+- [ ] Preserve Eigen-backed exchange and adapter/orchestrator boundaries.
+- [ ] Validate MEX and toolbox output with the documented system-runtime
+      preload.
+- [ ] Do not add a repository-local MATLAB launcher.
+- [ ] Stop for the user commit titled
+      `Add the MATLAB R2024b EKLT wrapper`.
+
+## Stage 18 - Repository metadata and hygiene
+
+- [ ] Review issue and pull-request templates, attributes, ignore rules,
+      workspace guidance, and deprecated-file removal as one maintenance batch.
+- [ ] Refresh obsolete source paths and separate-library references.
+- [ ] Keep feature-specific scripts and documentation with their owning earlier
+      stages.
+- [ ] Validate structured files, stale references, source packaging, and
+      diffs.
+- [ ] Stop for the user commit titled
+      `Refresh EKLT repository metadata and guidance`.
+
+## Stage 19 - Final cumulative review
+
+- [ ] Review the complete cumulative upgrade against the accepted baseline.
+- [ ] Reconcile names, layout, APIs, exports, dependencies, packaging,
+      documentation, and remaining dirty groups.
+- [ ] Run the complete native, wrapper, Python, MATLAB, ROS2, documentation,
+      packaging, shell, structured-file, and exact-index gates.
+- [ ] Record unavailable ROS1 runtime validation as CI or environment evidence.
+- [ ] Confirm findings 4 and 7 remain explicitly deferred.
+- [ ] Stage only the acceptance record and directly required corrections.
+- [ ] Stop for the user commit titled
+      `Finalize the EKLT template upgrade acceptance record`.
+
+## Checkpoint ledger
+
+| Stage | Status | Validation summary | Accepted commit |
+|---|---|---|---|
+| 11 - Product-native library consolidation | awaiting user commit | Exact-index shared/static Werror 33/33, installed consumers, Doxygen, one-library layout, source package, staged-byte parity, and live ROS2 build passed | pending |
+| 12 - CI and development environment | pending | Not run; requires accepted Stage 11 checkpoint | - |
+| 13 - Legacy ROS1 C++ integration | pending | Not run; requires accepted Stage 12 checkpoint | - |
+| 14 - ROS2 event-only overlay | pending | Not run; requires accepted Stage 13 checkpoint | - |
+| 15 - Accepted wrapper build foundation | pending | Not run; requires accepted Stage 14 checkpoint | - |
+| 16 - Portable Python package | pending | Not run; requires accepted Stage 15 checkpoint | - |
+| 17 - MATLAB R2024b wrapper | pending | Not run; requires accepted Stage 16 checkpoint | - |
+| 18 - Repository metadata and hygiene | pending | Not run; requires accepted Stage 17 checkpoint | - |
+| 19 - Final cumulative review | pending | Not run; requires accepted Stage 18 checkpoint | - |
