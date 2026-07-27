@@ -290,6 +290,9 @@ Each functional stage is a mandatory user-commit boundary:
 - [x] Keep native working state bounded: do not retain pre-initialization event
       batches, exclude patch buffers and caches from snapshots, and bound the
       ROS1 transport queue.
+- [x] Exercise real KLT translation, FIBAR/Ceres event-only tracking, and
+      feature loss/reinitialization with runtime-generated synthetic frames
+      and ideal frame-difference events.
 - [x] Use Catch2 and ROS1 CI evidence; no local ROS1 build is required.
 - [x] Stop for the user commit titled
       `Integrate the ROS1 tracker with the native EKLT core`.
@@ -375,7 +378,7 @@ Each functional stage is a mandatory user-commit boundary:
 |---|---|---|---|
 | 11 - Product-native library consolidation | accepted | Exact-index shared/static Werror 33/33, installed consumers, Doxygen, one-library layout, source package, staged-byte parity, and live ROS2 build passed | `78bfa69e008dd65b695b1a4f8c8aa192ada2e3a9` |
 | 12 - CI and development environment | accepted | Exact-index workflow semantics, preserved filters and names, Bash, ShellCheck, BuildKit checks, and the Ubuntu 20.04 image build passed | `7ab4df431104a0c63939746ba7889299a3403746` |
-| 13 - Legacy ROS1 C++ integration | awaiting user commit | Exact-index shared/static Werror 41/41, Noetic catkin 49/49, installed consumers and legacy headers, launch/linkage checks, Doxygen, source packaging, structured/shell validation, and staged-byte parity passed | pending |
+| 13 - Legacy ROS1 C++ integration | awaiting user commit | Exact-index shared/static Werror 43/43 including synthetic KLT, FIBAR/Ceres, and reinitialization algorithm paths; Noetic catkin 51/51; installed consumers and legacy headers, launch/linkage checks, Doxygen, source packaging, structured/shell validation, and staged-byte parity passed | pending |
 | 14 - ROS2 event-only overlay | pending | Not run; requires accepted Stage 13 checkpoint | - |
 | 15 - Accepted wrapper build foundation | pending | Not run; requires accepted Stage 14 checkpoint | - |
 | 16 - Portable Python package | pending | Not run; requires accepted Stage 15 checkpoint | - |
