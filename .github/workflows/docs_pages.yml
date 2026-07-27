@@ -3,6 +3,8 @@ run-name: Verify EKLT Doxygen documentation
 
 on:
   push:
+    branches:
+      - master
     paths:
       - "README.md"
       - "include/**"
@@ -12,6 +14,8 @@ on:
       - "CMakeLists.txt"
       - ".github/workflows/docs_pages.yml"
   pull_request:
+    branches:
+      - master
     paths:
       - "README.md"
       - "include/**"
@@ -20,7 +24,6 @@ on:
       - "cmake/**"
       - "CMakeLists.txt"
       - ".github/workflows/docs_pages.yml"
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -45,6 +48,7 @@ jobs:
             doxygen \
             g++ \
             graphviz \
+            libceres-dev \
             libopencv-dev
 
       - name: Build documentation

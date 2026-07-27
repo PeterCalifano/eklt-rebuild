@@ -261,12 +261,12 @@ Each functional stage is a mandatory user-commit boundary:
 
 ## Stage 12 - CI and development environment
 
-- [ ] Stage only the Ceres-aware devcontainer setup and the four standard
+- [x] Stage only the Ceres-aware devcontainer setup and the four standard
       workflows.
-- [ ] Run workflows only for pull requests targeting `master` and pushes to
+- [x] Run workflows only for pull requests targeting `master` and pushes to
       `master`.
-- [ ] Preserve path filters and `verify_*` job names.
-- [ ] Validate YAML, Bash, ShellCheck, Docker BuildKit, and focused diffs.
+- [x] Preserve path filters and `verify_*` job names.
+- [x] Validate YAML, Bash, ShellCheck, Docker BuildKit, and focused diffs.
 - [ ] Stop for the user commit titled
       `Align CI with the C++17 Ceres build`.
 
@@ -362,8 +362,8 @@ Each functional stage is a mandatory user-commit boundary:
 
 | Stage | Status | Validation summary | Accepted commit |
 |---|---|---|---|
-| 11 - Product-native library consolidation | awaiting user commit | Exact-index shared/static Werror 33/33, installed consumers, Doxygen, one-library layout, source package, staged-byte parity, and live ROS2 build passed | pending |
-| 12 - CI and development environment | pending | Not run; requires accepted Stage 11 checkpoint | - |
+| 11 - Product-native library consolidation | accepted | Exact-index shared/static Werror 33/33, installed consumers, Doxygen, one-library layout, source package, staged-byte parity, and live ROS2 build passed | `78bfa69e008dd65b695b1a4f8c8aa192ada2e3a9` |
+| 12 - CI and development environment | awaiting user commit | Exact-index workflow semantics, preserved filters and names, Bash, ShellCheck, BuildKit checks, and the Ubuntu 20.04 image build passed | pending |
 | 13 - Legacy ROS1 C++ integration | pending | Not run; requires accepted Stage 12 checkpoint | - |
 | 14 - ROS2 event-only overlay | pending | Not run; requires accepted Stage 13 checkpoint | - |
 | 15 - Accepted wrapper build foundation | pending | Not run; requires accepted Stage 14 checkpoint | - |

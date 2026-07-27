@@ -40,6 +40,7 @@ apt-get install -y \
 
 apt-get install -y \
   libboost-all-dev \
+  libceres-dev \
   libeigen3-dev \
   libsdl2-dev
 

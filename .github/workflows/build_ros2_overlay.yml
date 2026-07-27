@@ -2,7 +2,9 @@ name: verify_eklt_ros2_overlay
 run-name: Verify the optional EKLT ROS 2 overlay
 
 on:
-  pull_request:
+  push:
+    branches:
+      - master
     paths:
       - "ros2/**"
       - "src/CMakeLists.txt"
@@ -13,7 +15,19 @@ on:
       - "CMakeLists.txt"
       - "cmake/**"
       - ".github/workflows/build_ros2_overlay.yml"
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - master
+    paths:
+      - "ros2/**"
+      - "src/CMakeLists.txt"
+      - "src/eklt_core/**"
+      - "src/event_recon_fibar_core/**"
+      - "lib/fibar_lib"
+      - "build_ros2.sh"
+      - "CMakeLists.txt"
+      - "cmake/**"
+      - ".github/workflows/build_ros2_overlay.yml"
 
 jobs:
   overlay-build:

@@ -2,7 +2,9 @@ name: verify_eklt_ros1
 run-name: Verify EKLT with ROS 1 Noetic
 
 on:
-  pull_request:
+  push:
+    branches:
+      - master
     paths:
       - "CMakeLists.txt"
       - "build_ros1.sh"
@@ -14,7 +16,20 @@ on:
       - "package.xml"
       - "src/**"
       - ".github/workflows/build_ros1.yml"
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - master
+    paths:
+      - "CMakeLists.txt"
+      - "build_ros1.sh"
+      - "cmake/**"
+      - "config/**"
+      - "dependencies.yaml"
+      - "include/**"
+      - "launch/**"
+      - "package.xml"
+      - "src/**"
+      - ".github/workflows/build_ros1.yml"
 
 jobs:
   build:
@@ -38,6 +53,9 @@ jobs:
           apt-get install -y \
             git \
             libcaer-dev \
+            libceres-dev \
+            libeigen3-dev \
+            libopencv-dev \
             python3-catkin-tools \
             python3-vcstool \
             ros-noetic-camera-info-manager \

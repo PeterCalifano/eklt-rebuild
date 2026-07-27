@@ -3,8 +3,11 @@ run-name: Verify EKLT native and Python builds
 
 on:
   push:
+    branches:
+      - master
   pull_request:
-  workflow_dispatch:
+    branches:
+      - master
 
 jobs:
   build:
