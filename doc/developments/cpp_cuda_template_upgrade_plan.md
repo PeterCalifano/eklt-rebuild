@@ -3,8 +3,11 @@
 This checklist records the semantic upgrade of `rpg_eklt` from its mixed
 template snapshot around `cpp_cuda_template_project` v1.2.0 to the reviewed
 v1.11.3 donor revision (`dbffe4d4babb88a8682bfd19cf2bea3bc93fe252`).
-The live dirty checkout is authoritative: existing EKLT, event-only, FIBAR,
-ROS2, documentation, and test work must be preserved.
+The one later inherited wrapper helper accepted for Stage 15 comes from the
+reviewed parent v1.12.0 commit recorded in that stage; this explicit exception
+does not change the general v1.11.3 alignment baseline. The live dirty checkout
+is authoritative: existing EKLT, event-only, FIBAR, ROS2, documentation, and
+test work must be preserved.
 
 Checked items record implementation or validation in the live checkout. They
 do not imply that the corresponding files are staged, committed, or accepted
@@ -118,8 +121,8 @@ Acceptance evidence is recorded in
 - [x] Re-run affected build, package, wrapper, documentation, structured-file,
       shell, and stale-reference gates.
 - [ ] Resolve the inherited parent/target BuildKit `UndefinedVar` warning for
-      the optional CUDA `LD_LIBRARY_PATH` declaration, then rerun
-      `docker buildx build --check`.
+      the optional CUDA `LD_LIBRARY_PATH` declaration in Stage 20, or record the
+      exact upstream blocker there before final acceptance.
 
 ## Stage 9 - P1 packaging and deletion safety
 
@@ -209,18 +212,16 @@ Acceptance evidence is recorded in
 - [x] Do not import donor recursive `VerifyTemplateProject*` fixtures; prove
       the product contract with fresh builds, Catch2, CI, install, and external
       consumers.
-- [ ] Accept wrapper portability changes only after the parent helper fix has
-      an authorized commit beyond `dbffe4d`/v1.11.3 and EKLT matches that exact
-      helper blob.
-- [ ] Replace the dirty broad Python native-library scan with packaging of the
-      explicit `libeklt-rebuild` target once the accepted parent API is
-      available.
+- [ ] Complete the accepted parent-helper synchronization and wrapper build
+      foundation only in Stage 15, using the exact v1.12.0 commit and blob
+      recorded there.
+- [ ] Replace the dirty broad Python native-library scan with explicit
+      target-derived runtime packaging only in Stage 16.
 - [ ] Refresh historical acceptance text that names separate
-      `libevent_recon_fibar_core` and `libevent_recon_fibar_adapters`
-      artifacts; those names are superseded by the one-library decision.
-- [ ] Review legacy ROS1 reconstruction/tracking algorithm changes only in a
-      later source batch; this consolidation must not edit
-      `src/optimizer.cpp` or `src/tracker.cpp`.
+      `libevent_recon_fibar_core` and `libevent_recon_fibar_adapters` artifacts
+      in Stage 20; those names are superseded by the one-library decision.
+- [x] Review the legacy ROS1 reconstruction/tracking algorithm changes in the
+      dedicated Stage 13 source batch without mixing them into Stage 11.
 
 ### Consolidation acceptance gates
 
@@ -244,20 +245,27 @@ algorithm consolidation. Keep later changes to `src/optimizer.cpp`,
 
 ## Checkpoint protocol for remaining stages
 
-Each functional stage is a mandatory user-commit boundary:
+Each functional stage is exactly one mandatory user-commit boundary:
 
-- [ ] Reconcile `HEAD`, upstream, index, worktree, submodules, and inherited
-      helper provenance before starting the stage.
-- [ ] Work only on the current stage; do not edit or pre-stage later-stage
-      files.
+- [ ] Start with a read-only review: reconcile `HEAD`, upstream, index,
+      worktree, submodules, inherited-helper provenance, current
+      implementation, and the exact intended stage scope.
+- [ ] Report review findings and the proposed paths, behavior, validation, and
+      commit message before staging the batch.
+- [ ] Implement and stage only the current stage; do not edit or pre-stage
+      later-stage files.
 - [ ] Update this checklist and the ignored `CONTEXT.md` with validation
       evidence.
 - [ ] Review the complete index and validate an isolated exact-index snapshot.
 - [ ] Report findings, staged paths, remaining work, commit title, and
-      description.
+      description, then stop for the user's review.
+- [ ] Apply only the user's requested updates within the same stage, restage
+      the complete batch, and rerun every affected gate plus the complete-index
+      checks.
 - [ ] Stop without committing and wait for the user to commit and say `next`.
-- [ ] On `next`, confirm the index is clear, record the accepted commit hash in
-      the checkpoint ledger, and only then begin the following stage.
+- [ ] On `next`, confirm the accepted `HEAD`, reconcile the index, worktree,
+      upstream, and submodules, record the commit hash in the checkpoint
+      ledger, and only then begin the following stage.
 
 ## Stage 12 - CI and development environment
 
@@ -299,17 +307,33 @@ Each functional stage is a mandatory user-commit boundary:
 
 ## Stage 14 - ROS2 event-only overlay
 
-- [ ] Stage the `eklt_rebuild` package, event-only configuration, scripts, and
+- [x] Stage the `eklt_rebuild` package, event-only configuration, scripts, and
       directly related documentation.
-- [ ] Link the canonical native target without recompiling its sources.
-- [ ] Keep ROS2 transport and parameters confined to the overlay.
-- [ ] Complete gradient-cache lifecycle handling.
-- [ ] Validate colcon, EventPacket decoding, deterministic tracking, non-empty
+- [x] Link the canonical native target without recompiling its sources.
+- [x] Keep ROS2 transport and parameters confined to the overlay.
+- [x] Complete gradient-cache lifecycle handling.
+- [x] Validate colcon, EventPacket decoding, deterministic tracking, non-empty
       output, and scripts.
-- [ ] Run the user-selected existing example through ROS2, converting its bag
+- [x] Run the user-selected existing example through ROS2, converting its bag
       to EventPacket-compatible ROS2 data when necessary, and notify the user
       when it is ready for their first test.
-- [ ] Stop for the user commit titled
+- [x] Publish the original feature overlay for standard ROS2 image tools and
+      optionally save bounded finite-normalized FIBAR frames as PNG files.
+- [x] Convert the ELOPE event array into bounded EventPacket packets and run it
+      through the same tracking, visualization, PNG, and summary path without
+      requiring camera intrinsics.
+- [x] Treat explicit ELOPE width/height metadata as authoritative, fall back to
+      the official 200-by-200 sensor contract, and never infer geometry from
+      observed event-coordinate maxima.
+- [x] Audit project-owned Python definitions and keep the first parameter on
+      the same line as the function name; correct every Stage 14 violation.
+- [x] Record bounded per-packet FIBAR, remaining native EKLT, and complete
+      ROS2 processing time, then generate a validated stacked-area profile
+      whose colored bands reconstruct the total boundary.
+- [x] Give the processing-time profile a capitalized descriptive title,
+      bracketed time units, explicit component labels, and matching
+      machine-readable plot-label metadata.
+- [x] Stop for the user commit titled
       `Add the ROS2 event-only EKLT overlay`.
 
 ## Stage 15 - Accepted wrapper build foundation
@@ -318,17 +342,22 @@ Each functional stage is a mandatory user-commit boundary:
       `b277e4b84e2f1e501d6c2e73370efe0ecd101f23`.
 - [ ] Sync `HandleWrapper.cmake` byte-for-byte from that commit; the expected
       blob is `367b6c3a226dc6fb64e35f471dfb5cd63b43262c`.
-- [ ] Stage the pinned read-only `lib/wrap` integration,
-      `wrap_interfaces/`, and project wrapper CMake configuration.
+- [ ] Stage `.gitmodules`, the pinned read-only `lib/wrap` gitlink,
+      `wrap_interfaces/`, and project-owned wrapper CMake configuration.
 - [ ] Generate wrappers against the canonical target without staging generated
       output.
+- [ ] Keep Python distribution policy, MATLAB packaging, dataset utilities,
+      and demo orchestration outside this foundation commit.
 - [ ] Stop for the user commit titled
       `Align generated-wrapper support with template v1.12.0`.
 
 ## Stage 16 - Portable Python package
 
-- [ ] Publish the identifier-safe `eklt_rebuild` package while preserving its
-      established API.
+- [ ] Publish the `eklt-rebuild` distribution with the identifier-safe
+      `eklt_rebuild` import package, following the root project name without
+      exposing an invalid hyphenated Python identifier.
+- [ ] Preserve `eklt_bridge` as its existing separately owned distribution and
+      do not silently absorb `event_vision_utils` into either Python package. // Review note: Guideline is to prefer clean and clear design without indirections, excessive complexity to keeping backward compatibility at all costs. If this is clean enough and required for compatibility with existing external packages (but if implemenation is currently in this repo but made "compatible", then keep it)
 - [ ] Package only explicit target-derived runtime artifacts.
 - [ ] Use `$ORIGIN`; omit `_wrapper_build.py`, caches, and bytecode.
 - [ ] Validate wrapper CTest, Python tests, wheel contents, CMake installation,
@@ -347,19 +376,65 @@ Each functional stage is a mandatory user-commit boundary:
 - [ ] Stop for the user commit titled
       `Add the MATLAB R2024b EKLT wrapper`.
 
-## Stage 18 - Repository metadata and hygiene
+## Stage 18 - `event_vision_utils` data foundation
+
+- [ ] Stage the documented signed-polarity, integer-microsecond `EventArray`
+      model, dataset metadata, ELOPE and generic NPZ adapters, bounded slicing,
+      visualization primitives, and native FIBAR wrapper adapter.
+- [ ] Preserve the established `event_vision_utils` import API under explicitly
+      owned distribution metadata separate from `eklt_bridge` and
+      `eklt_rebuild`.
+- [ ] Add explicit tested conversions between
+      `eklt_bridge.primitives.EventStream` and `EventArray`; do not blur their
+      seconds/`{0,1}` and microseconds/`{-1,+1}` contracts.
+- [ ] Keep the eager prototype direct ROS2 publisher, multi-sequence selection,
+      AEDAT4, asynchronous ROS2 processing, and complete demo orchestration
+      outside this foundation commit.
+- [ ] Apply the Python documentation, callable type-hint, first-argument
+      formatting, bounded-memory, and structured-output gates.
+- [ ] Stop for the user commit titled
+      `Establish the event_vision_utils data model`.
+
+## Stage 19 - Single-sequence ELOPE analysis pipeline
+
+- [ ] Stage the official-dataset download and validation helpers,
+      single-sequence reconstruction and tracking orchestration, output
+      evaluation, plots, event/patch/track videos, summaries, tests, and
+      directly related documentation.
+- [ ] Build on the accepted Stage 14 ROS2 EventPacket runner, Stage 16 Python
+      wrapper, and Stage 18 data model rather than retaining parallel codecs,
+      loaders, or visualization stacks.
+- [ ] Define stable per-sequence artifact schemas and reader documentation so
+      the later multi-sequence stage can aggregate results without changing the
+      single-sequence contract.
+- [ ] Keep generated datasets and outputs ignored, and restrict cleanup to
+      explicitly owned artifacts below the selected output directory.
+- [ ] Do not add random multi-sequence selection, AEDAT4 ingestion, generic
+      direct publishing, or online/asynchronous ROS2 behavior in this stage.
+- [ ] Stop for the user commit titled
+      `Add the single-sequence ELOPE analysis pipeline`.
+
+## Stage 20 - Repository metadata and hygiene
 
 - [ ] Review issue and pull-request templates, attributes, ignore rules,
       workspace guidance, and deprecated-file removal as one maintenance batch.
 - [ ] Refresh obsolete source paths and separate-library references.
+- [ ] Correct agent guidance to the accepted src-local native adapter-header
+      layout without restoring the removed repository-root `include/`
+      directory.
+- [ ] Resolve the Stage 8 BuildKit warning or record its exact authorized
+      upstream blocker.
+- [ ] Archive or mark superseded implementation audits and reconcile the
+      active event-only, ROS2, and template-upgrade plans.
 - [ ] Keep feature-specific scripts and documentation with their owning earlier
       stages.
 - [ ] Validate structured files, stale references, source packaging, and
       diffs.
 - [ ] Stop for the user commit titled
       `Refresh EKLT repository metadata and guidance`.
+- [ ] Review aiming at simplifying to reduce complexity while keeping functionalities, documentation and code comments for development and readable implementation. Unnecessary or uselessly single use (unless improving clarity a lot) abstractions, indirections, local helpers should be removed
 
-## Stage 19 - Final cumulative review
+## Stage 21 - Final cumulative review
 
 - [ ] Review the complete cumulative upgrade against the accepted baseline.
 - [ ] Reconcile names, layout, APIs, exports, dependencies, packaging,
@@ -369,8 +444,41 @@ Each functional stage is a mandatory user-commit boundary:
 - [ ] Record unavailable ROS1 runtime validation as CI or environment evidence.
 - [ ] Confirm findings 4 and 7 remain explicitly deferred.
 - [ ] Stage only the acceptance record and directly required corrections.
+- [ ] Insert a dedicated correction stage before acceptance if a finding
+      requires material source, packaging, or behavior changes; do not hide
+      another functional batch in this final record.
 - [ ] Stop for the user commit titled
       `Finalize the EKLT template upgrade acceptance record`.
+
+## Handoff to multi-dataset and online streaming
+
+The separate
+[`Multi-Dataset and Online EKLT Streaming Plan`](dataset_and_online_streaming_plan.md)
+starts only after Stage 21 has an accepted commit and the user says `next`. It
+must preserve the Stage 14 synchronous ROS2 path as the deterministic offline
+reference and build on the accepted Stage 18/19 data and single-sequence
+contracts.
+
+Each handoff stage remains one user commit:
+
+- [ ] Streaming Stage 0 reconciles and records the accepted upgrade baseline
+      without production changes.
+- [ ] Streaming Stage 1 adds deterministic sampled multi-sequence ELOPE
+      orchestration, aggregate results, owned cleanup, and optional saved input
+      bags.
+- [ ] Streaming Stage 2 adds bounded dataset-record iteration, a generic direct
+      EventPacket publisher, ordered processing acknowledgements, packet
+      duration/count policy, and a delegating ELOPE compatibility entrypoint.
+- [ ] Streaming Stage 3 adds the Python 3.12 AEDAT4 adapter, pinned dependency
+      environment, metadata/frame handling, and runtime-generated fixture.
+- [ ] Streaming Stage 4 adds bounded input, exclusive algorithm, and bounded
+      output workers with sequence-gap/drop reset barriers and ordered
+      acknowledgements while preserving deterministic tracking parity.
+- [ ] Streaming Stage 5 adds subscriber-gated asynchronous event, FIBAR, track,
+      and active-patch image diagnostics with validated rates and latest-only
+      coalescing.
+- [ ] Streaming Stage 6 adds PlotJuggler-friendly scalar metrics and complete
+      queue/FIBAR/EKLT/output/end-to-end timing artifacts.
 
 ## Checkpoint ledger
 
@@ -378,10 +486,12 @@ Each functional stage is a mandatory user-commit boundary:
 |---|---|---|---|
 | 11 - Product-native library consolidation | accepted | Exact-index shared/static Werror 33/33, installed consumers, Doxygen, one-library layout, source package, staged-byte parity, and live ROS2 build passed | `78bfa69e008dd65b695b1a4f8c8aa192ada2e3a9` |
 | 12 - CI and development environment | accepted | Exact-index workflow semantics, preserved filters and names, Bash, ShellCheck, BuildKit checks, and the Ubuntu 20.04 image build passed | `7ab4df431104a0c63939746ba7889299a3403746` |
-| 13 - Legacy ROS1 C++ integration | awaiting user commit | Exact-index shared/static Werror 43/43 including synthetic KLT, FIBAR/Ceres, and reinitialization algorithm paths; Noetic catkin 51/51; installed consumers and legacy headers, launch/linkage checks, Doxygen, source packaging, structured/shell validation, and staged-byte parity passed | pending |
-| 14 - ROS2 event-only overlay | pending | Not run; requires accepted Stage 13 checkpoint | - |
+| 13 - Legacy ROS1 C++ integration | accepted | Exact-index shared/static Werror 43/43 including synthetic KLT, FIBAR/Ceres, and reinitialization algorithm paths; Noetic catkin 51/51; installed consumers and legacy headers, launch/linkage checks, Doxygen, source packaging, structured/shell validation, and staged-byte parity passed | `9c731b88ea82af9b70770ca02941b9d4e19c8c3d` |
+| 14 - ROS2 event-only overlay | awaiting user commit | Exact-index shared/static Werror 47/47, installed consumers, Doxygen, colcon 2/2 with eight GTest cases, shared config installation, legacy and ELOPE tracking with bounded PNG output, advertised/fallback ELOPE geometry resolution, project-owned Python definition-layout audit, and structured/shell/package gates passed. The bounded official ELOPE timing run produced 200 additive rows and a visually reviewed, unit-labeled stacked plot with matching summary metadata, 82,924 KiB peak RSS, and no swaps; the earlier full converted bag retained 99.93% duration coverage | `pending` |
 | 15 - Accepted wrapper build foundation | pending | Not run; requires accepted Stage 14 checkpoint | - |
 | 16 - Portable Python package | pending | Not run; requires accepted Stage 15 checkpoint | - |
 | 17 - MATLAB R2024b wrapper | pending | Not run; requires accepted Stage 16 checkpoint | - |
-| 18 - Repository metadata and hygiene | pending | Not run; requires accepted Stage 17 checkpoint | - |
-| 19 - Final cumulative review | pending | Not run; requires accepted Stage 18 checkpoint | - |
+| 18 - `event_vision_utils` data foundation | pending | Not run; requires accepted Stage 17 checkpoint | - |
+| 19 - Single-sequence ELOPE analysis pipeline | pending | Not run; requires accepted Stage 18 checkpoint | - |
+| 20 - Repository metadata and hygiene | pending | Not run; requires accepted Stage 19 checkpoint | - |
+| 21 - Final cumulative review | pending | Not run; requires accepted Stage 20 checkpoint | - |
