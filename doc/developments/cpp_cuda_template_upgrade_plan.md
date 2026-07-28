@@ -31,7 +31,7 @@ from an uncommitted parent-template baseline.
 
 | Contract | Tailored state | Required proof |
 |---|---|---|
-| Identity | Published CMake library/package `eklt-rebuild`; identifier-constrained CMake/ROS/Python name `eklt_rebuild`; utility package `event_vision_utils` | Names flow from the root project without invalid hyphenated identifiers |
+| Identity | Published CMake and Python distribution `eklt-rebuild`; identifier-constrained CMake/ROS/generated-binding name `eklt_rebuild`; distinct `eklt_bridge` and extraction-ready `event_vision_utils` import namespaces | Names flow from the root project without invalid hyphenated identifiers while Python modules retain explicit responsibilities |
 | Architecture | ROS1 frame-backed tracker plus alternative event-only path | Existing and event-only tests remain green |
 | Native API | One `libeklt-rebuild` containing the compiled `eklt_core`, `event_recon_fibar_core`, `visualization`, and `wrap_adapters` implementations | Shared/static builds, one-binary artifact check, and installed consumer |
 | Wrappers | Optional Python/MATLAB generation over the always-built C++ adapter API | Python equivalence, relocated-wheel import, and MATLAB R2024b tests |
@@ -355,9 +355,10 @@ Each functional stage is exactly one mandatory user-commit boundary:
       `1ecd54164b5c5f9ef61ab2ad794640898d12e374`.
 - [x] Stage `.gitmodules`, the pinned read-only `lib/wrap` gitlink,
       `wrap_interfaces/`, and project-owned wrapper CMake configuration.
-- [x] Keep generated wrapper metadata below `wrap_interfaces/python/` so
-      wrapper configuration cannot overwrite the separately owned
-      repository-level `eklt-bridge` distribution.
+- [x] Keep generated wrapper metadata below `wrap_interfaces/python/` at this
+      checkpoint so wrapper configuration cannot overwrite the then-separate
+      repository-level Python distribution. Stage 18 intentionally supersedes
+      this temporary split after validating the wrapper artifact contract.
 - [x] Keep `build_lib.sh --python` focused on native and generated-wrapper
       CTest; do not couple it to the separate `eklt-bridge` pytest suite.
 - [x] Generate wrappers against the canonical target without staging generated
@@ -378,13 +379,13 @@ Each functional stage is exactly one mandatory user-commit boundary:
       `eklt_rebuild` import package, following the root project name without
       exposing an invalid hyphenated Python identifier.
 - [x] Own its templates, wheel metadata, and tests below
-      `wrap_interfaces/python/`; keep repository-level `python/` dedicated to
-      the separate `eklt-bridge` distribution.
-- [x] Preserve `eklt_bridge` as its existing separately owned distribution and
-      do not silently absorb `event_vision_utils` into either Python package.
-      This is a direct ownership boundary, not a compatibility shim: generated
-      native bindings and hand-written bridge utilities retain distinct
-      metadata and tests.
+      `wrap_interfaces/python/` for the wrapper-only acceptance checkpoint.
+      Stage 18 later moves this accepted machinery to the root Python project
+      when the complete distribution boundary is reviewed together.
+- [x] Preserve the existing `eklt_bridge` distribution unchanged during this
+      checkpoint and defer any explicit package consolidation to Stage 18.
+      Generated native bindings and hand-written modules therefore remain
+      independently testable before their release metadata is unified.
 - [x] Package only explicit target-derived runtime artifacts.
 - [x] Use `$ORIGIN`; omit `_wrapper_build.py`, caches, and bytecode.
 - [x] Validate wrapper CTest, Python tests, wheel contents, CMake installation,
@@ -412,24 +413,30 @@ Each functional stage is exactly one mandatory user-commit boundary:
 - [x] Stop for the user commit titled
       `Add the MATLAB R2024b EKLT wrapper`.
 
-## Stage 18 - `event_vision_utils` data foundation
+## Stage 18 - Unified Python distribution and `event_vision_utils` foundation
 
-- [ ] Stage the documented signed-polarity, integer-microsecond `EventArray`
+- [x] Stage the documented signed-polarity, integer-microsecond `EventArray`
       model, dataset metadata, ELOPE and generic NPZ adapters, bounded slicing,
       visualization primitives, and native FIBAR wrapper adapter.
-- [ ] Preserve the established `event_vision_utils` import API under explicitly
-      owned distribution metadata separate from `eklt_bridge` and
-      `eklt_rebuild`.
-- [ ] Add explicit tested conversions between
-      `eklt_bridge.primitives.EventStream` and `EventArray`; do not blur their
-      seconds/`{0,1}` and microseconds/`{-1,+1}` contracts.
-- [ ] Keep the eager prototype direct ROS2 publisher, multi-sequence selection,
+- [x] Supersede the temporary Stage 15/16 distribution split with one
+      root-owned `eklt-rebuild` Python distribution containing the distinct
+      `eklt_rebuild`, `eklt_bridge`, and `event_vision_utils` import
+      namespaces.
+- [x] Preserve `event_vision_utils` as a dependency-light, extraction-ready
+      namespace developed alongside EKLT, with a documented future move to
+      EventDataGenerationLib or a dedicated repository. Keep its established
+      import API and ownership boundary explicit inside the unified
+      distribution.
+- [x] Keep `EventArray` and `eklt_bridge.primitives.EventStream` independent;
+      do not add compatibility converters or re-exports between their
+      microseconds/`{-1,+1}` and seconds/`{0,1}` contracts.
+- [x] Keep the eager prototype direct ROS2 publisher, multi-sequence selection,
       AEDAT4, asynchronous ROS2 processing, and complete demo orchestration
       outside this foundation commit.
-- [ ] Apply the Python documentation, callable type-hint, first-argument
+- [x] Apply the Python documentation, callable type-hint, first-argument
       formatting, bounded-memory, and structured-output gates.
-- [ ] Stop for the user commit titled
-      `Establish the event_vision_utils data model`.
+- [x] Stop for the user commit titled
+      `Unify EKLT Python packaging and event utilities`.
 
 ## Stage 19 - Single-sequence ELOPE analysis pipeline
 
@@ -526,8 +533,8 @@ Each handoff stage remains one user commit:
 | 14 - ROS2 event-only overlay | accepted | Exact-index shared/static Werror 48/48, installed consumers, Doxygen, colcon 2/2 with eight GTest cases, and the root `ros1/`, `src/visualization/`, and `src/wrap_adapters/` boundaries passed. Shared config installation, legacy and ELOPE tracking with bounded PNG output, advertised/fallback ELOPE geometry resolution, the Python definition-layout audit, and structured/shell/package gates passed. The bounded official ELOPE timing run produced 200 additive rows and a visually reviewed, unit-labeled stacked plot with matching summary metadata, 82,924 KiB peak RSS, and no swaps; the earlier full converted bag retained 99.93% duration coverage | `8d8ea370af29acfccf7044060809ed686b9e3f45` |
 | 15 - Accepted wrapper build foundation | accepted | Signed v1.12.1 helper-set blob parity; exact-index shared/static Werror 49/49; build-linked, installed, and relocated Python imports plus FIBAR API calls; installed C++ consumers; Doxygen; source-package exclusions; and staged-byte parity passed | `bef852920d153a07229d7b7b71e696a35a065961` |
 | 16 - Portable Python package | accepted | Exact-index shared/static Werror 50/50; wrapper pytest; CMake installs and consumers; shared/static exact-artifact wheels; unrelated-library exclusion; `$ORIGIN`; relocated imports with empty `LD_LIBRARY_PATH`; Doxygen, source-package, structured-file, shell, and staged-byte gates passed | `af0d766706ce1366010b4d943b72d3d42ee86fb6` |
-| 17 - MATLAB R2024b wrapper | awaiting user commit | Exact-index shared/static Werror 52/52; four R2024b MEX regressions; exact-artifact toolbox installs; `$ORIGIN`; relocated shared/static execution with empty `LD_LIBRARY_PATH`; simultaneous Python generation; installed C++ consumers; MATLAB checkcode, Doxygen, source-package, and staged-byte gates passed | `pending` |
-| 18 - `event_vision_utils` data foundation | pending | Not run; requires accepted Stage 17 checkpoint | - |
+| 17 - MATLAB R2024b wrapper | accepted | Exact-index shared/static Werror 52/52; four R2024b MEX regressions; exact-artifact toolbox installs; `$ORIGIN`; relocated shared/static execution with empty `LD_LIBRARY_PATH`; simultaneous Python generation; installed C++ consumers; MATLAB checkcode, Doxygen, source-package, and staged-byte gates passed | `19bc27a87788fc2f7334259ccb59824ad18fcefe` |
+| 18 - Unified Python distribution and `event_vision_utils` foundation | awaiting user commit | Exact-index shared Python-plus-MATLAB Werror 54/54 and static Python Werror 50/50 passed with CMake installs and installed consumers. Simplified shared/static exact-artifact wheels passed relocated suites with 94 tests and one expected skip; the pure wheel and sdist passed the source-only suite with 89 tests and six native-optional skips. Doxygen, root source packaging, official ELOPE loading, structured-file, documentation/type/layout, and staged-byte gates passed | `pending` |
 | 19 - Single-sequence ELOPE analysis pipeline | pending | Not run; requires accepted Stage 18 checkpoint | - |
 | 20 - Repository metadata and hygiene | pending | Not run; requires accepted Stage 19 checkpoint | - |
 | 21 - Final cumulative review | pending | Not run; requires accepted Stage 20 checkpoint | - |

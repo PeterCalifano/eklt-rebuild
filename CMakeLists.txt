@@ -218,8 +218,8 @@ if((BUILD_AS_MAIN_PROJECT OR EKLT_BUILD_ROS1) AND
 endif()
 
 if(BUILD_AS_MAIN_PROJECT AND (EKLT_BUILD_PYTHON OR EKLT_BUILD_MATLAB))
-    # Keep wrapper-generated Python metadata separate from the existing
-    # eklt-bridge distribution rooted at repository-level python/.
+    # Configure generated bindings against the root-owned Python distribution
+    # and the wrapper-local MATLAB toolbox.
     add_subdirectory(wrap_interfaces)
 endif()
 
@@ -266,13 +266,13 @@ if(BUILD_AS_MAIN_PROJECT)
         "^${_eklt_source_root_regex}/(.*/)?\\.pytest_cache/"
         "^${_eklt_source_root_regex}/(.*/)?\\.mypy_cache/"
         "^${_eklt_source_root_regex}/(.*/)?__pycache__/"
+        "^${_eklt_source_root_regex}/(.*/)?[^/]+\\.egg-info/"
         "^${_eklt_source_root_regex}/(.*/)?_wrapper_build\\.py$"
         "^${_eklt_source_root_regex}/.*\\.py[cod]$"
         "^${_eklt_source_root_regex}/.*\\.so(\\..*)?$"
         "^${_eklt_source_root_regex}/.*\\.(dylib|dll|pyd)$"
         "^${_eklt_source_root_regex}/CONTEXT\\.md$"
         "^${_eklt_source_root_regex}/lib/wrap/"
-        "^${_eklt_source_root_regex}/wrap_interfaces/python/(pyproject\\.toml|setup\\.py)$"
         "^${_eklt_source_root_regex}/wrap_interfaces/matlab/\\+wrap_adapters/"
         "^${_eklt_source_root_regex}/wrap_interfaces/matlab/eklt_rebuild_wrapper\\.mex[^/]*$"
         "^${_eklt_source_root_regex}/lib\\.root-owned-backup/"

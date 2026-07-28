@@ -3,8 +3,8 @@ requires = ["setuptools>=61", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "eklt-rebuild"
-version = "0.1.0"
+name = "@EKLT_PACKAGE_NAME@"
+version = "@PROJECT_VERSION@"
 description = "EKLT native bindings, bridge modules, and reusable event-vision utilities."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -25,10 +25,10 @@ eklt-sequence-source = "eklt_bridge.ros2_source.node:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["eklt_rebuild*", "eklt_bridge*", "event_vision_utils*"]
+include = ["@PROJECT_NAME@*", "eklt_bridge*", "event_vision_utils*"]
 
 [tool.setuptools.package-data]
-"eklt_rebuild" = ["*.so", "*.so.*", "*.pyd", "*.dll", "*.dylib", "*.pyi", "**/*.pyi"]
+"@PROJECT_NAME@" = ["*.so", "*.so.*", "*.pyd", "*.dll", "*.dylib", "*.pyi", "**/*.pyi"]
 event_vision_utils = ["README.md", "recon/README.md"]
 
 [tool.pytest.ini_options]

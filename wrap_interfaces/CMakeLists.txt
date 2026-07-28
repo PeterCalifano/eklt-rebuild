@@ -1,16 +1,13 @@
-# Configure generated-language bindings in a dedicated project source scope.
+# Configure generated-language bindings against the root EKLT project.
 #
-# HandleWrapper.cmake follows the parent-template convention of configuring
-# package metadata beneath PROJECT_SOURCE_DIR/python. This nested project keeps
-# that generated wrapper state independent of the repository-level eklt-bridge
-# distribution while preserving the canonical native target and project name.
+# Retaining the root project scope makes the inherited wrapper helper use the
+# canonical python/ package tree. MATLAB generation still remains local to
+# wrap_interfaces/matlab because that frontend is rooted at this source
+# directory.
 
-project(
-    eklt_rebuild
-    VERSION ${CMAKE_PROJECT_VERSION}
-    DESCRIPTION "Generated Python and MATLAB bindings for EKLT"
-    LANGUAGES CXX
-)
+# Keep generated wrapper code and toolbox fixtures inside this subdirectory's
+# binary tree while PROJECT_SOURCE_DIR continues to identify the root package.
+set(PROJECT_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 
 set(PROJECT_PYTHON_VERSION "${EKLT_PYTHON_MIN_VERSION}")
 set(MATLAB_DEFAULT_RELEASE "${EKLT_MATLAB_RELEASE}")
@@ -45,18 +42,6 @@ set(
     OFF CACHE BOOL "Do not add submodules during CMake configure" FORCE
 )
 
-if(EKLT_BUILD_MATLAB)
-    # Keep the published hyphenated native target while giving gtwrap the
-    # identifier-safe module name required by generated MATLAB/C++ symbols.
-    set(EKLT_MATLAB_MODULE_NAME "${LIB_NAMESPACE}")
-    if(NOT TARGET ${EKLT_MATLAB_MODULE_NAME})
-        add_library(${EKLT_MATLAB_MODULE_NAME} ALIAS ${LIB_TARGET_NAME})
-    endif()
-    set(LIBNAME_WRAP_TARGET ${EKLT_MATLAB_MODULE_NAME})
-else()
-    set(LIBNAME_WRAP_TARGET ${LIB_TARGET_NAME})
-endif()
-
 if(EKLT_BUILD_MATLAB AND NOT DEFINED Matlab_ROOT_DIR)
     set(
         Matlab_ROOT_DIR
@@ -66,7 +51,64 @@ if(EKLT_BUILD_MATLAB AND NOT DEFINED Matlab_ROOT_DIR)
 endif()
 
 include("${CMAKE_SOURCE_DIR}/cmake/HandleWrapper.cmake")
-handle_gtwrappers()
+
+# Resolve gtwrap once, then configure each language against the target identity
+# its generator accepts. Python must name the concrete runtime target, whereas
+# MATLAB requires an identifier-safe alias for generated C++ symbols.
+set(
+    ${PROJECT_NAME}_PYTHON_WRAPPER_TARGET
+    ""
+    CACHE INTERNAL "Resolved Python wrapper target name for the project." FORCE
+)
+configure_gtwrappers_common()
+
+if(${${LIB_NAMESPACE}_BUILD_PYTHON_WRAPPER})
+    set(LIBNAME_WRAP_TARGET ${LIB_TARGET_NAME})
+    configure_python_gtwrapper()
+endif()
+
+if(${${LIB_NAMESPACE}_BUILD_MATLAB_WRAPPER})
+    set(EKLT_MATLAB_MODULE_NAME "${LIB_NAMESPACE}")
+    if(NOT TARGET ${EKLT_MATLAB_MODULE_NAME})
+        add_library(${EKLT_MATLAB_MODULE_NAME} ALIAS ${LIB_TARGET_NAME})
+    endif()
+    set(LIBNAME_WRAP_TARGET ${EKLT_MATLAB_MODULE_NAME})
+    configure_matlab_gtwrapper()
+endif()
+
+if(EKLT_BUILD_PYTHON)
+    _resolve_python_install_root(_eklt_python_install_root)
+
+    # Install the two hand-written namespaces beside the generated binding so
+    # CMake and wheel installations expose the same unified distribution.
+    foreach(_eklt_python_package IN ITEMS eklt_bridge event_vision_utils)
+        set(
+            _eklt_python_package_source
+            "${PROJECT_SOURCE_DIR}/python/${_eklt_python_package}"
+        )
+        if(NOT IS_DIRECTORY "${_eklt_python_package_source}")
+            message(
+                FATAL_ERROR
+                "Unified Python package source is missing: "
+                "${_eklt_python_package_source}"
+            )
+        endif()
+
+        install(
+            DIRECTORY "${_eklt_python_package_source}/"
+            DESTINATION
+                "${_eklt_python_install_root}/${_eklt_python_package}"
+            PATTERN "__pycache__" EXCLUDE
+            PATTERN "*.pyc" EXCLUDE
+            PATTERN "_wrapper_build.py" EXCLUDE
+            PATTERN "*.so" EXCLUDE
+            PATTERN "*.so.*" EXCLUDE
+            PATTERN "*.dylib" EXCLUDE
+            PATTERN "*.dll" EXCLUDE
+            PATTERN "*.pyd" EXCLUDE
+        )
+    endforeach()
+endif()
 
 if(EKLT_BUILD_MATLAB)
     set(_eklt_matlab_wrapper_target "${EKLT_MATLAB_MODULE_NAME}_matlab_wrapper")

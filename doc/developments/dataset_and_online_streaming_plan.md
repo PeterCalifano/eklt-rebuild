@@ -38,8 +38,9 @@ user, recorded in the checkpoint ledger, and followed by an explicit `next`.
 - [ ] Keep event coordinates in pixels, timestamps in signed integer
       microseconds, and polarity in `{-1,+1}` at the
       `event_vision_utils`/native boundary.
-- [ ] Preserve `eklt_bridge.EventStream` seconds/`{0,1}` compatibility only
-      through explicit converters; do not make it the native EKLT data model.
+- [ ] Keep `eklt_bridge.EventStream` confined to its existing bridge consumers.
+      New dataset and ROS2 work uses `EventArray` directly and does not add
+      compatibility converters or make the bridge representation native.
 - [ ] Require fixed advertised sensor geometry for each tracker lifetime.
       Dataset or stream geometry changes must be rejected or handled through an
       explicit reset/new-lifetime boundary.

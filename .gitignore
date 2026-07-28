@@ -39,4 +39,9 @@ ros2/log/
 *.py[cod]
 .pytest_cache/
 .mypy_cache/
+
+# Python packaging outputs
+*.egg-info/
+dist/
+
 CONTEXT.md

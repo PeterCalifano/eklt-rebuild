@@ -1,4 +1,8 @@
-"""Public package entrypoint for stage-2 EKLT bridge helpers."""
+"""Expose EKLT-specific transport and source helpers.
+
+This namespace remains separate from generic :mod:`event_vision_utils` modules
+inside the unified ``eklt-rebuild`` distribution.
+"""
 
 from .config import (
     FrameSettings,

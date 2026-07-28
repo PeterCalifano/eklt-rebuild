@@ -1,0 +1,14 @@
+include LICENSE
+include README.md
+exclude eklt_rebuild/_wrapper_build.py
+global-exclude __pycache__
+global-exclude *.py[cod]
+global-exclude *.so
+global-exclude *.so.*
+global-exclude *.dylib
+global-exclude *.dll
+global-exclude *.pyd
+prune build
+prune dist
+prune *.egg-info
+prune tests

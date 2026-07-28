@@ -1,4 +1,4 @@
-"""Expose generated EKLT bindings through one stable import package.
+"""Expose generated EKLT bindings through the unified Python distribution.
 
 The package loads a co-located installed extension when available. During a
 CMake build, it falls back to the exact extension and runtime artifacts named

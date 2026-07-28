@@ -1,17 +1,20 @@
-# `eklt_rebuild` Python Wrapper
+# `eklt-rebuild` Python Distribution
 
-The generated Python package exposes the Eigen-backed FIBAR adapter from the
-same `libeklt-rebuild` target used by C++ consumers.
+The root Python distribution combines the generated Eigen-backed FIBAR adapter,
+EKLT bridge modules, and reusable event-vision utilities. The native binding
+still comes from the same `libeklt-rebuild` target used by C++ consumers.
 
-The package surfaces intentionally use two spellings:
+The distribution and import surfaces intentionally use distinct spellings:
 
 - distribution: `eklt-rebuild`, inherited from the root CMake project name;
-- import package and native extension: `eklt_rebuild`, normalized for Python
-  identifiers.
+- generated import package and native extension: `eklt_rebuild`, normalized for
+  Python identifiers;
+- EKLT-specific bridge namespace: `eklt_bridge`;
+- reusable, extraction-ready namespace: `event_vision_utils`.
 
-This package is owned below `wrap_interfaces/python/`. The repository-level
-`python/` directory remains the separate `eklt-bridge` distribution, and
-`event_vision_utils` is not bundled into either package.
+All three namespaces are owned by the repository-level `python/` project and
+are installed and versioned together. Their internal contracts remain explicit
+so `event_vision_utils` can later be extracted without renaming its public API.
 
 ## Build and test
 
@@ -28,16 +31,20 @@ git submodule update --init lib/fibar_lib lib/wrap
 ```
 
 The ordinary CTest run includes the wrapper import and the focused Python API
-tests under `wrap_interfaces/python/tests/`.
+test under `python/tests/`. The root Python test job covers the bridge and
+event-utility namespaces.
 
 The CMake install remains prefix-relative:
 
 ```text
-build/python-wrapper/install/lib/python3.12/site-packages/eklt_rebuild/
+build/python-wrapper/install/lib/python3.12/site-packages/
+├── eklt_rebuild/
+├── eklt_bridge/
+└── event_vision_utils/
 ```
 
-It contains `__init__.py`, the generated `eklt_rebuild` extension, and
-`libeklt-rebuild` when the native library is shared. A static build links the
+The generated extension and `libeklt-rebuild` are co-located under
+`eklt_rebuild/` when the native library is shared. A static build links the
 native implementation into the extension and therefore installs no separate
 EKLT runtime library.
 
@@ -51,10 +58,10 @@ python3 -m pip wheel \
   --no-build-isolation \
   --no-deps \
   --wheel-dir build/python-wheel \
-  wrap_interfaces/python
+  ./python
 ```
 
-The package setup reads the explicit wrapper and runtime paths produced by
+The root package setup reads the explicit wrapper and runtime paths produced by
 CMake. It does not scan a build directory for native libraries. The resulting
 wheel excludes `_wrapper_build.py`, caches, bytecode, and unrelated shared
 libraries.
