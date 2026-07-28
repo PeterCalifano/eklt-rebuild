@@ -374,19 +374,24 @@ Each functional stage is exactly one mandatory user-commit boundary:
 
 ## Stage 16 - Portable Python package
 
-- [ ] Publish the `eklt-rebuild` distribution with the identifier-safe
+- [x] Publish the `eklt-rebuild` distribution with the identifier-safe
       `eklt_rebuild` import package, following the root project name without
       exposing an invalid hyphenated Python identifier.
-- [ ] Own its templates, wheel metadata, and tests below
+- [x] Own its templates, wheel metadata, and tests below
       `wrap_interfaces/python/`; keep repository-level `python/` dedicated to
       the separate `eklt-bridge` distribution.
-- [ ] Preserve `eklt_bridge` as its existing separately owned distribution and
-      do not silently absorb `event_vision_utils` into either Python package. // Review note: Guideline is to prefer clean and clear design without indirections, excessive complexity to keeping backward compatibility at all costs. If this is clean enough and required for compatibility with existing external packages (but if implemenation is currently in this repo but made "compatible", then keep it)
-- [ ] Package only explicit target-derived runtime artifacts.
-- [ ] Use `$ORIGIN`; omit `_wrapper_build.py`, caches, and bytecode.
-- [ ] Validate wrapper CTest, Python tests, wheel contents, CMake installation,
+- [x] Preserve `eklt_bridge` as its existing separately owned distribution and
+      do not silently absorb `event_vision_utils` into either Python package.
+      This is a direct ownership boundary, not a compatibility shim: generated
+      native bindings and hand-written bridge utilities retain distinct
+      metadata and tests.
+- [x] Package only explicit target-derived runtime artifacts.
+- [x] Use `$ORIGIN`; omit `_wrapper_build.py`, caches, and bytecode.
+- [x] Validate wrapper CTest, Python tests, wheel contents, CMake installation,
       and relocated import with an empty `LD_LIBRARY_PATH`.
-- [ ] Stop for the user commit titled
+- [x] Add a dedicated Linux CI job for the generated wrapper without coupling
+      it to the separately owned `eklt-bridge` test job.
+- [x] Stop for the user commit titled
       `Package a relocatable eklt_rebuild Python wrapper`.
 
 ## Stage 17 - MATLAB R2024b wrapper
@@ -512,8 +517,8 @@ Each handoff stage remains one user commit:
 | 12 - CI and development environment | accepted | Exact-index workflow semantics, preserved filters and names, Bash, ShellCheck, BuildKit checks, and the Ubuntu 20.04 image build passed | `7ab4df431104a0c63939746ba7889299a3403746` |
 | 13 - Legacy ROS1 C++ integration | accepted | Exact-index shared/static Werror 43/43 including synthetic KLT, FIBAR/Ceres, and reinitialization algorithm paths; Noetic catkin 51/51; installed consumers and legacy headers, launch/linkage checks, Doxygen, source packaging, structured/shell validation, and staged-byte parity passed | `9c731b88ea82af9b70770ca02941b9d4e19c8c3d` |
 | 14 - ROS2 event-only overlay | accepted | Exact-index shared/static Werror 48/48, installed consumers, Doxygen, colcon 2/2 with eight GTest cases, and the root `ros1/`, `src/visualization/`, and `src/wrap_adapters/` boundaries passed. Shared config installation, legacy and ELOPE tracking with bounded PNG output, advertised/fallback ELOPE geometry resolution, the Python definition-layout audit, and structured/shell/package gates passed. The bounded official ELOPE timing run produced 200 additive rows and a visually reviewed, unit-labeled stacked plot with matching summary metadata, 82,924 KiB peak RSS, and no swaps; the earlier full converted bag retained 99.93% duration coverage | `8d8ea370af29acfccf7044060809ed686b9e3f45` |
-| 15 - Accepted wrapper build foundation | awaiting user commit | Signed v1.12.1 helper-set blob parity; exact-index shared/static Werror 49/49; build-linked, installed, and relocated Python imports plus FIBAR API calls; installed C++ consumers; Doxygen; source-package exclusions; and staged-byte parity passed | `pending` |
-| 16 - Portable Python package | pending | Not run; requires accepted Stage 15 checkpoint | - |
+| 15 - Accepted wrapper build foundation | accepted | Signed v1.12.1 helper-set blob parity; exact-index shared/static Werror 49/49; build-linked, installed, and relocated Python imports plus FIBAR API calls; installed C++ consumers; Doxygen; source-package exclusions; and staged-byte parity passed | `bef852920d153a07229d7b7b71e696a35a065961` |
+| 16 - Portable Python package | awaiting user commit | Exact-index shared/static Werror 50/50; wrapper pytest; CMake installs and consumers; shared/static exact-artifact wheels; unrelated-library exclusion; `$ORIGIN`; relocated imports with empty `LD_LIBRARY_PATH`; Doxygen, source-package, structured-file, shell, and staged-byte gates passed | `pending` |
 | 17 - MATLAB R2024b wrapper | pending | Not run; requires accepted Stage 16 checkpoint | - |
 | 18 - `event_vision_utils` data foundation | pending | Not run; requires accepted Stage 17 checkpoint | - |
 | 19 - Single-sequence ELOPE analysis pipeline | pending | Not run; requires accepted Stage 18 checkpoint | - |

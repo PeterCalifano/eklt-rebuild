@@ -1,3 +1,8 @@
 # CMake-generated wrapper package metadata.
 pyproject.toml
 setup.py
+
+# Python wheel build output.
+build/
+dist/
+*.egg-info/

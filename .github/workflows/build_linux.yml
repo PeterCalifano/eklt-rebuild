@@ -103,6 +103,92 @@ jobs:
           python -m pytest -q python/tests
           python -m compileall -q python
 
+  python_wrapper:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Select Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: wrap_interfaces/python/pyproject.toml.in
+
+      - name: Initialize wrapper dependencies
+        run: |
+          git -c 'url.https://github.com/.insteadOf=git@github.com:' \
+            submodule update --init lib/fibar_lib lib/wrap
+
+      - name: Install native and Python dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            catch2 \
+            cmake \
+            g++ \
+            libceres-dev \
+            libeigen3-dev \
+            libopencv-dev
+          python -m pip install numpy pytest wheel
+
+      - name: Build, test, and install generated wrapper
+        run: |
+          ./build_lib.sh \
+            --build-dir build/ci-python-wrapper \
+            --type Release \
+            --python \
+            --install \
+            --define ENABLE_FETCH_CATCH2=OFF \
+            --define WARNINGS_ARE_ERRORS=ON
+
+      - name: Build and relocate exact-artifact wheel
+        run: |
+          touch \
+            build/ci-python-wrapper/wrap_interfaces/python/eklt_rebuild/libunrelated_plugin.so
+          python -m pip wheel \
+            --no-build-isolation \
+            --no-deps \
+            --wheel-dir build/ci-python-wheel \
+            wrap_interfaces/python
+
+          wheel_path="$(
+            find build/ci-python-wheel -maxdepth 1 -name '*.whl' -print -quit
+          )"
+          test -n "${wheel_path}"
+          relocated_root="${RUNNER_TEMP}/eklt-wheel-relocated"
+
+          python - "${wheel_path}" "${relocated_root}" <<'PY'
+          from pathlib import Path, PurePosixPath
+          import sys
+          from zipfile import ZipFile
+
+          wheel_path = Path(sys.argv[1])
+          relocated_root = Path(sys.argv[2])
+          with ZipFile(wheel_path) as wheel:
+              names = set(wheel.namelist())
+              assert "eklt_rebuild/__init__.py" in names
+              assert "eklt_rebuild/eklt_rebuild.so" in names
+              assert "eklt_rebuild/libeklt-rebuild.so" in names
+              assert all("_wrapper_build.py" not in name for name in names)
+              assert all("__pycache__" not in name for name in names)
+              assert all(not name.endswith((".pyc", ".pyo")) for name in names)
+              assert all(
+                  PurePosixPath(name).name != "libunrelated_plugin.so"
+                  for name in names
+              )
+              wheel.extractall(relocated_root)
+          PY
+
+          env -u LD_LIBRARY_PATH \
+            PYTHONPATH="${PWD}/build/ci-python-wrapper/install/lib/python3.12/site-packages" \
+            python wrap_interfaces/python/tests/test_eklt_rebuild.py
+
+          env -u LD_LIBRARY_PATH \
+            PYTHONPATH="${relocated_root}" \
+            python wrap_interfaces/python/tests/test_eklt_rebuild.py
+
   hygiene:
     runs-on: ubuntu-24.04
     steps:
