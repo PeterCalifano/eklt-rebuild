@@ -189,6 +189,13 @@ CATCH_TEST_CASE("Frame-backed orchestration orders batches and rejects regressio
     CATCH_REQUIRE(tracker.acceptEvents(unordered_events));
     CATCH_CHECK(tracker.statistics().accepted_events == 3);
     CATCH_CHECK(tracker.statistics().processed_events == 3);
+    const eklt_core::STrackerTimingSample timing =
+        tracker.lastProcessingTiming();
+    CATCH_REQUIRE(timing.valid());
+    CATCH_CHECK(timing.t_us == 202);
+    CATCH_CHECK(timing.fibar_ms == 0.0);
+    CATCH_CHECK(timing.eklt_ms >= 0.0);
+    CATCH_CHECK(timing.native_total_ms >= timing.eklt_ms);
 
     // A frame arriving behind already processed event time cannot restore an
     // obsolete causal image state.
@@ -196,6 +203,7 @@ CATCH_TEST_CASE("Frame-backed orchestration orders batches and rejects regressio
 
     CATCH_CHECK_THROWS_AS(tracker.acceptEvents({MakeEvent(2, 2, 201)}), std::invalid_argument);
     CATCH_CHECK(tracker.statistics().accepted_events == 3);
+    CATCH_CHECK_FALSE(tracker.lastProcessingTiming().valid());
 }
 
 CATCH_TEST_CASE("Frame-backed orchestration recovers synthetic image translation",
@@ -279,6 +287,14 @@ CATCH_TEST_CASE("Event-only orchestration reconstructs without middleware state"
     CATCH_REQUIRE(tracker.acceptEvents(initialization_events));
     CATCH_REQUIRE(tracker.initialized());
     CATCH_REQUIRE(tracker.activeTrackCount() > 0);
+    const eklt_core::STrackerTimingSample initialization_timing =
+        tracker.lastProcessingTiming();
+    CATCH_REQUIRE(initialization_timing.valid());
+    CATCH_CHECK(initialization_timing.t_us == initialization_events.back().t_us);
+    CATCH_CHECK(initialization_timing.fibar_ms >= 0.0);
+    CATCH_CHECK(initialization_timing.eklt_ms >= 0.0);
+    CATCH_CHECK(initialization_timing.native_total_ms >=
+                initialization_timing.fibar_ms);
 
     const eklt_core::STrackerSnapshot initial_snapshot = tracker.snapshot();
     CATCH_REQUIRE(initial_snapshot.valid());
@@ -388,5 +404,6 @@ CATCH_TEST_CASE("Native reset clears reconstruction and feature lifetimes",
     CATCH_CHECK_FALSE(tracker.snapshot().valid());
     CATCH_CHECK(tracker.takeTrackSamples().empty());
     CATCH_CHECK(tracker.statistics().accepted_events == 0);
+    CATCH_CHECK_FALSE(tracker.lastProcessingTiming().valid());
     CATCH_CHECK(tracker.config().width == 64);
 }

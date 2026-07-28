@@ -4,6 +4,37 @@
 
 Implement the ROS2 migration in three gated stages, with tests added and run at the end of each stage before moving on.
 
+## Current ROS2 Overlay Status
+
+The checkpointed template-upgrade plan supersedes the historical migration
+sequence below for current implementation work.
+
+- [x] Keep the ROS1 package and ROS2 overlay independently buildable.
+- [x] Build the ROS2 `eklt_rebuild` package through `./build_ros2.sh`.
+- [x] Consume the canonical ROS-free `eklt-rebuild` target without recompiling
+      native sources in the ROS2 package.
+- [x] Decode `event_camera_msgs/msg/EventPacket` through
+      `event_camera_codecs`.
+- [x] Delegate FIBAR initialization, scheduling, feature lifecycle, Ceres
+      tracking, deterministic ordering, and gradient-cache release to
+      `CEkltTrackerOrchestrator`.
+- [x] Keep ROS2 ownership limited to transport, parameter loading, file/topic
+      output, display-image publication, and optional PNG persistence.
+- [x] Share one transport-neutral feature renderer with ROS1 and publish the
+      ROS2 `bgr8` overlay at bounded rate and queue depth for standard tools.
+- [x] Persist newly reconstructed finite-normalized FIBAR images only when
+      explicitly requested, with stride and maximum-count bounds.
+- [x] Decompose each accepted packet into FIBAR, remaining native EKLT, and
+      ROS2 interface/output wall time; validate and plot the additive total
+      without retaining timing history in the node.
+- [x] Cover mono EventPacket tuple conversion and deterministic synthetic
+      tracking in an ament GTest.
+- [x] Provide converted legacy-bag, ELOPE `.npz`, and live DVXplorer
+      EventPacket example demos through one common ROS2 runner.
+- [x] Document the runnable overlay in `doc/ros2_event_only.md`.
+- [ ] Validate a physical DVXplorer on the target device after its firmware and
+      ROS2 source path are known.
+
 The sequencing is intentional:
 
 - [x] Stage 2 is a complete, usable hybrid release built around the existing ROS1 EKLT implementation plus ROS2-facing bridge tools.
@@ -71,7 +102,7 @@ Python package layout:
 Stage-2 substeps:
 
 - [x] Stage 2A: land the reusable Python package, message converters, and config layer with unit tests only.
-- [ ] Stage 2B: land the generic ROS2 source, ROS2 preview visualization topics, and ROS1 relay path for a minimal synthetic scene and verify EKLT can consume it.
+- [ ] Stage 2B: land the generic ROS2 source, ROS2 preview visualization topics, and ROS1 relay path for a minimal fixture scene and verify EKLT can consume it.
 - [ ] Stage 2C: add one command or launch-driven end-to-end demo that starts the full chain, writes EKLT tracks for a configured frame sequence, and exposes the visualization stream in ROS2.
 - [ ] Stage 2D: freeze and tag the validated hybrid release as the archived ROS1-based baseline before any ROS2-native EKLT port begins.
 
@@ -140,7 +171,8 @@ Port the package to ROS2 as a clean cutover, keeping the tracking algorithm unch
 Build and package changes:
 
 - [ ] Replace catkin build plumbing with `ament_cmake`.
-- [ ] Keep the package name `eklt`.
+- [ ] Use the ROS-valid package name `eklt_rebuild`, derived from the root
+  `eklt-rebuild` library identity.
 - [ ] Keep the node executable name `eklt_node`.
 - [ ] Move launch to ROS2 Python launch files.
 - [ ] Drop ROS1-only launch conveniences such as in-launch `rosbag play`; ROS2 bag playback stays external.

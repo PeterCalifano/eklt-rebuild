@@ -2,7 +2,7 @@
 <package format="3">
   <name>eklt_rebuild</name>
   <version>0.1.0</version>
-  <description>ROS2 EventPacket reconstruction and event-only tracking for eklt-rebuild.</description>
+  <description>Thin ROS2 EventPacket adapter for the ROS-free eklt-rebuild tracker.</description>
   <maintainer email="petercalifano.gs@gmail.com">Pietro Califano</maintainer>
   <maintainer email="daniel.gehrig18@gmail.com">Daniel Gehrig</maintainer>
   <license>GPL-3.0-only</license>
@@ -19,6 +19,7 @@
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
+  <test_depend>ament_cmake_gtest</test_depend>
 
   <export>
     <build_type>ament_cmake</build_type>

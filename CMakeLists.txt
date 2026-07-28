@@ -150,29 +150,29 @@ if(EKLT_BUILD_ROS1)
     # package.xml rosdep keys already owned by plain-CMake dependency discovery.
     catkin_simple()
 
-    # Co-locate the ROS1 compatibility surface and its implementation while
+    # Keep the ROS1 overlay at the repository root, parallel to ros2/, while
     # teaching catkin_simple to preserve the historical global include names.
     set(
         ${PROJECT_NAME}_LOCAL_INCLUDE_DIR
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/ros1"
+        "${CMAKE_CURRENT_SOURCE_DIR}/ros1"
     )
     set(EKLT_ROS1_HEADERS
-        src/ros1/error.h
-        src/ros1/flags.h
-        src/ros1/optimizer.h
-        src/ros1/patch.h
-        src/ros1/tracker.h
-        src/ros1/tracker_utils.h
-        src/ros1/types.h
-        src/ros1/viewer.h
+        ros1/error.h
+        ros1/flags.h
+        ros1/optimizer.h
+        ros1/patch.h
+        ros1/tracker.h
+        ros1/tracker_utils.h
+        ros1/types.h
+        ros1/viewer.h
     )
     set(EKLT_ROS1_SOURCES
-        src/ros1/flags.cpp
-        src/ros1/optimizer.cpp
-        src/ros1/patch.cpp
-        src/ros1/tracker.cpp
-        src/ros1/tracker_utils.cpp
-        src/ros1/viewer.cpp
+        ros1/flags.cpp
+        ros1/optimizer.cpp
+        ros1/patch.cpp
+        ros1/tracker.cpp
+        ros1/tracker_utils.cpp
+        ros1/viewer.cpp
     )
 
     cs_add_library(eklt ${EKLT_ROS1_SOURCES} ${EKLT_ROS1_HEADERS})
@@ -180,19 +180,20 @@ if(EKLT_BUILD_ROS1)
     target_include_directories(
         eklt
         PUBLIC
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/ros1>
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/ros1>
             $<INSTALL_INTERFACE:${CATKIN_GLOBAL_INCLUDE_DESTINATION}>
     )
     target_link_libraries(
         eklt
         eklt_core
+        ${LIB_NAMESPACE}::visualization
         ${catkin_LIBRARIES}
         eklt_compile_options
         eklt_optional_dependencies
         ${SANITIZER_TARGET}
         ${PROFILING_COMPILE_TARGET}
     )
-    cs_add_executable(eklt_node src/ros1/eklt_node.cpp)
+    cs_add_executable(eklt_node ros1/eklt_node.cpp)
     target_compile_features(eklt_node PRIVATE cxx_std_17)
     target_link_libraries(
         eklt_node
@@ -226,7 +227,7 @@ if(BUILD_AS_MAIN_PROJECT AND (EKLT_BUILD_PYTHON OR EKLT_BUILD_MATLAB))
     )
     set(
         ${LIB_NAMESPACE}_GTWRAP_TOP_NAMESPACE
-        "event_recon_fibar_adapters"
+        "wrap_adapters"
         CACHE STRING "Top namespace used for EKLT gtwrap generation" FORCE
     )
     set(
@@ -270,6 +271,7 @@ if(BUILD_AS_MAIN_PROJECT AND EKLT_BUILD_DOCS)
         LAYOUT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/doc/DoxygenLayout.xml"
         INPUT_DIRS
             "${CMAKE_CURRENT_SOURCE_DIR}/src"
+            "${CMAKE_CURRENT_SOURCE_DIR}/ros1"
             "${CMAKE_CURRENT_SOURCE_DIR}/doc"
         EXCLUDE_DIRS
             "${CMAKE_CURRENT_SOURCE_DIR}/doc/developments/reports"

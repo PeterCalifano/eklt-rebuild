@@ -2,7 +2,8 @@
 
 `event_recon_fibar_core` is the C++ facade over the vendored upstream FIBAR
 implementation in `lib/fibar_lib`. The Eigen-backed
-`event_recon_fibar_adapters` boundary belongs to the same native library.
+`wrap_adapters` boundary belongs to the same native library and owns only
+generated-wrapper conversion policy.
 
 ## Build Target
 
@@ -21,7 +22,7 @@ canonical installed target:
 The package also retains logical API targets for focused consumers:
 
 - `eklt_rebuild::event_recon_fibar_core`
-- `eklt_rebuild::event_recon_fibar_adapters`
+- `eklt_rebuild::wrap_adapters`
 
 The two targets resolve to the same native binary; they do not create separate
 core and adapter shared libraries.

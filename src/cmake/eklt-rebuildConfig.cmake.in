@@ -28,7 +28,8 @@ include("${CMAKE_CURRENT_LIST_DIR}/@EKLT_PACKAGE_NAME@Targets.cmake")
 # Preserve logical API targets without publishing additional binaries.
 foreach(_eklt_api_target IN ITEMS
         event_recon_fibar_core
-        event_recon_fibar_adapters)
+        visualization
+        wrap_adapters)
     set(_eklt_qualified_target
         "@LIB_NAMESPACE@::${_eklt_api_target}")
     if(TARGET "${_eklt_qualified_target}")

@@ -22,7 +22,8 @@ target_link_libraries(
 foreach(required_target IN ITEMS
         eklt_rebuild::eklt_core
         eklt_rebuild::event_recon_fibar_core
-        eklt_rebuild::event_recon_fibar_adapters)
+        eklt_rebuild::visualization
+        eklt_rebuild::wrap_adapters)
     if(NOT TARGET "${required_target}")
         message(FATAL_ERROR "Missing installed API target: ${required_target}")
     endif()

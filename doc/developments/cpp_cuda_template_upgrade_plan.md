@@ -33,7 +33,7 @@ from an uncommitted parent-template baseline.
 |---|---|---|
 | Identity | Published CMake library/package `eklt-rebuild`; identifier-constrained CMake/ROS/Python name `eklt_rebuild`; utility package `event_vision_utils` | Names flow from the root project without invalid hyphenated identifiers |
 | Architecture | ROS1 frame-backed tracker plus alternative event-only path | Existing and event-only tests remain green |
-| Native API | One `libeklt-rebuild` containing the compiled `eklt_core`, `event_recon_fibar_core`, and `event_recon_fibar_adapters` implementations | Shared/static builds, one-binary artifact check, and installed consumer |
+| Native API | One `libeklt-rebuild` containing the compiled `eklt_core`, `event_recon_fibar_core`, `visualization`, and `wrap_adapters` implementations | Shared/static builds, one-binary artifact check, and installed consumer |
 | Wrappers | Optional Python/MATLAB generation over the always-built C++ adapter API | Python equivalence, relocated-wheel import, and MATLAB R2024b tests |
 | ROS | ROS1 reference; ROS2 event-only experimental overlay | Independent catkin/colcon entrypoints |
 | Removed features | OptiX, PTX, ZeroMQ | No active options, dependencies, or root-helper usage; inherited helpers stay immutable |
@@ -43,8 +43,8 @@ from an uncommitted parent-template baseline.
 
 - [x] Make plain CMake configuration independent of catkin.
 - [x] Export canonical `eklt_rebuild::eklt-rebuild` and logical
-      `event_recon_fibar_core`/`event_recon_fibar_adapters` API targets without
-      publishing separate FIBAR binaries.
+      `event_recon_fibar_core`, `visualization`, and `wrap_adapters` API targets
+      without publishing separate component binaries.
 - [x] Use C++17 consistently for ROS1, the ROS-free native library, FIBAR,
       wrappers, and ROS2.
 - [x] Add install, package-config, CPack, Doxygen, and consumer support.
@@ -173,11 +173,12 @@ Acceptance evidence is recorded in
       `lib/fibar_lib` checkout and Eigen.
 - [x] Compile the FIBAR facade and Eigen-backed adapters/orchestrators into the
       same physical `libeklt-rebuild` shared or static library.
-- [x] Preserve separate `event_recon_fibar_core` and
-      `event_recon_fibar_adapters` component directories and C++ namespaces.
-- [x] Co-locate the native adapter headers with their implementation under
-      `src/event_recon_fibar_adapters/` while preserving installed
-      `<event_recon_fibar_adapters/...>` include spellings.
+- [x] Preserve separate `eklt_core`, `event_recon_fibar_core`,
+      `visualization`, and `wrap_adapters` source/API boundaries within the
+      single physical library.
+- [x] Co-locate Eigen-backed wrapper adapter headers and implementation under
+      `src/wrap_adapters/`, with matching `<wrap_adapters/...>` includes and
+      the `wrap_adapters` C++ namespace.
 - [x] Remove the legacy repository-root `include/` directory from the native
       target's build interface; the independent ROS1 target continues to own
       its legacy headers.
@@ -185,8 +186,9 @@ Acceptance evidence is recorded in
       independently of Python or MATLAB wrapper-generation options.
 - [x] Publish `eklt_rebuild::eklt-rebuild` as the canonical CMake target while
       retaining `eklt_rebuild::event_recon_fibar_core` and
-      `eklt_rebuild::event_recon_fibar_adapters` as logical views of the same
-      installed binary.
+      adding `eklt_rebuild::visualization` and
+      `eklt_rebuild::wrap_adapters` as logical views of the same installed
+      binary.
 - [x] Point gtwrap at the canonical native target so its generated module links
       and packages one project-owned runtime library.
 - [x] Remove the obsolete core-only CI matrix and make native facade/adapter
@@ -282,8 +284,8 @@ Each functional stage is exactly one mandatory user-commit boundary:
 
 - [x] Review the tracker, optimizer, patch, viewer, flags, configuration,
       launch, and focused tests as one batch.
-- [x] Co-locate ROS1 headers and implementations under `src/ros1/` while
-      preserving installed catkin include names.
+- [x] Keep ROS1 headers and implementations in the root `ros1/` overlay,
+      parallel to `ros2/`, while preserving installed catkin include names.
 - [x] Move image/event scheduling, initialization, KLT/event bootstrap,
       feature lifecycle, reinitialization, and track snapshots into one
       ROS-free C++17 `*Orchestrator` API.
@@ -311,6 +313,8 @@ Each functional stage is exactly one mandatory user-commit boundary:
       directly related documentation.
 - [x] Link the canonical native target without recompiling its sources.
 - [x] Keep ROS2 transport and parameters confined to the overlay.
+- [x] Keep renderer policy outside `eklt_core` under `src/visualization/` and
+      expose it through the logical `eklt_rebuild::visualization` target.
 - [x] Complete gradient-cache lifecycle handling.
 - [x] Validate colcon, EventPacket decoding, deterministic tracking, non-empty
       output, and scripts.
@@ -487,7 +491,7 @@ Each handoff stage remains one user commit:
 | 11 - Product-native library consolidation | accepted | Exact-index shared/static Werror 33/33, installed consumers, Doxygen, one-library layout, source package, staged-byte parity, and live ROS2 build passed | `78bfa69e008dd65b695b1a4f8c8aa192ada2e3a9` |
 | 12 - CI and development environment | accepted | Exact-index workflow semantics, preserved filters and names, Bash, ShellCheck, BuildKit checks, and the Ubuntu 20.04 image build passed | `7ab4df431104a0c63939746ba7889299a3403746` |
 | 13 - Legacy ROS1 C++ integration | accepted | Exact-index shared/static Werror 43/43 including synthetic KLT, FIBAR/Ceres, and reinitialization algorithm paths; Noetic catkin 51/51; installed consumers and legacy headers, launch/linkage checks, Doxygen, source packaging, structured/shell validation, and staged-byte parity passed | `9c731b88ea82af9b70770ca02941b9d4e19c8c3d` |
-| 14 - ROS2 event-only overlay | awaiting user commit | Exact-index shared/static Werror 47/47, installed consumers, Doxygen, colcon 2/2 with eight GTest cases, shared config installation, legacy and ELOPE tracking with bounded PNG output, advertised/fallback ELOPE geometry resolution, project-owned Python definition-layout audit, and structured/shell/package gates passed. The bounded official ELOPE timing run produced 200 additive rows and a visually reviewed, unit-labeled stacked plot with matching summary metadata, 82,924 KiB peak RSS, and no swaps; the earlier full converted bag retained 99.93% duration coverage | `pending` |
+| 14 - ROS2 event-only overlay | awaiting user commit | Exact-index shared/static Werror 48/48, installed consumers, Doxygen, colcon 2/2 with eight GTest cases, and the root `ros1/`, `src/visualization/`, and `src/wrap_adapters/` boundaries passed. Shared config installation, legacy and ELOPE tracking with bounded PNG output, advertised/fallback ELOPE geometry resolution, the Python definition-layout audit, and structured/shell/package gates passed. The bounded official ELOPE timing run produced 200 additive rows and a visually reviewed, unit-labeled stacked plot with matching summary metadata, 82,924 KiB peak RSS, and no swaps; the earlier full converted bag retained 99.93% duration coverage | `pending` |
 | 15 - Accepted wrapper build foundation | pending | Not run; requires accepted Stage 14 checkpoint | - |
 | 16 - Portable Python package | pending | Not run; requires accepted Stage 15 checkpoint | - |
 | 17 - MATLAB R2024b wrapper | pending | Not run; requires accepted Stage 16 checkpoint | - |

@@ -6,6 +6,7 @@
 #include "eklt_core/tracker_orchestrator.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <limits>
 #include <stdexcept>
@@ -102,6 +103,20 @@ namespace eklt_core
         return image.valid();
     }
 
+    bool STrackerTimingSample::valid() const
+    {
+        if (t_us < 0 || !std::isfinite(fibar_ms) || fibar_ms < 0.0 ||
+            !std::isfinite(eklt_ms) || eklt_ms < 0.0 ||
+            !std::isfinite(native_total_ms) || native_total_ms < 0.0)
+        {
+            return false;
+        }
+
+        const double scale = std::max(1.0, native_total_ms);
+        return std::abs(fibar_ms + eklt_ms - native_total_ms) <=
+               1e-9 * scale;
+    }
+
     void STrackState::warpPixel(const cv::Point2d &unwarped, cv::Point2d *warped) const
     {
         if (warped == nullptr)
@@ -195,6 +210,7 @@ namespace eklt_core
         track_samples_.clear();
         optimizer_ = CPhotometricOptimizer(config_.max_num_iterations);
         statistics_ = STrackerStatistics();
+        last_processing_timing_ = STrackerTimingSample();
         next_track_id_ = 0;
         most_current_t_us_ = -1;
         events_since_reconstruction_ = 0;
@@ -269,6 +285,11 @@ namespace eklt_core
             return true;
         }
 
+        using TClock = std::chrono::steady_clock;
+        const TClock::time_point batch_start = TClock::now();
+        double fibar_ms = 0.0;
+        last_processing_timing_ = STrackerTimingSample();
+
         // Validate before mutating reconstruction or feature state, then
         // preserve source order among equal timestamps.
         validateEvents(events);
@@ -290,11 +311,31 @@ namespace eklt_core
         }
         else
         {
+            const TClock::time_point fibar_start = TClock::now();
             reconstructEventOnlyImage(events);
+            fibar_ms =
+                std::chrono::duration<double, std::milli>(TClock::now() - fibar_start)
+                    .count();
         }
 
         statistics_.accepted_events = SaturatingAdd(statistics_.accepted_events, events.size());
         last_accepted_event_t_us_ = events.back().t_us;
+
+        // Commit a sample only for successful non-empty batches. Keeping the
+        // last value invalid during validation and reconstruction failures
+        // prevents interface layers from logging stale measurements.
+        const auto record_timing =
+            [this, &events, batch_start, fibar_ms]()
+            {
+                const double native_total_ms =
+                    std::chrono::duration<double, std::milli>(TClock::now() - batch_start)
+                        .count();
+                last_processing_timing_.t_us = events.back().t_us;
+                last_processing_timing_.fibar_ms = fibar_ms;
+                last_processing_timing_.eklt_ms =
+                    std::max(0.0, native_total_ms - fibar_ms);
+                last_processing_timing_.native_total_ms = native_total_ms;
+            };
 
         // Events used to create the first causal image predate its new
         // patches. Retaining them would grow memory before initialization and
@@ -305,6 +346,7 @@ namespace eklt_core
         }
         if (!can_process_events)
         {
+            record_timing();
             return true;
         }
 
@@ -313,11 +355,11 @@ namespace eklt_core
             processEvent(event);
             statistics_.processed_events = SaturatingAdd(statistics_.processed_events, 1U);
         }
+        record_timing();
         return true;
     }
 
-    void CEkltTrackerOrchestrator::reconstructEventOnlyImage(
-        const std::vector<SEventSample> &events)
+    void CEkltTrackerOrchestrator::reconstructEventOnlyImage(const std::vector<SEventSample> &events)
     {
         if (!fibar_reconstructor_)
         {
@@ -824,6 +866,11 @@ namespace eklt_core
     STrackerStatistics CEkltTrackerOrchestrator::statistics() const
     {
         return currentStatistics();
+    }
+
+    STrackerTimingSample CEkltTrackerOrchestrator::lastProcessingTiming() const
+    {
+        return last_processing_timing_;
     }
 
     std::size_t CEkltTrackerOrchestrator::gradientCacheCount() const

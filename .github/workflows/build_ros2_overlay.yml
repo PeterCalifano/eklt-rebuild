@@ -7,9 +7,7 @@ on:
       - master
     paths:
       - "ros2/**"
-      - "src/CMakeLists.txt"
-      - "src/eklt_core/**"
-      - "src/event_recon_fibar_core/**"
+      - "src/**"
       - "lib/fibar_lib"
       - "build_ros2.sh"
       - "CMakeLists.txt"
@@ -20,9 +18,7 @@ on:
       - master
     paths:
       - "ros2/**"
-      - "src/CMakeLists.txt"
-      - "src/eklt_core/**"
-      - "src/event_recon_fibar_core/**"
+      - "src/**"
       - "lib/fibar_lib"
       - "build_ros2.sh"
       - "CMakeLists.txt"

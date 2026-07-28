@@ -136,6 +136,26 @@ namespace eklt_core
         int active_tracks{0};
     };
 
+    /// @brief Wall-clock decomposition for the most recently accepted event batch.
+    /// @details FIBAR time covers event ingestion and any requested causal-image
+    ///          reconstruction. EKLT time covers all remaining native validation,
+    ///          ordering, initialization, scheduling, and optimization work.
+    struct STrackerTimingSample
+    {
+        /// @brief Timestamp of the newest event in the accepted batch.
+        int64_t t_us{-1};
+        /// @brief FIBAR reconstruction wall time in milliseconds.
+        double fibar_ms{0.0};
+        /// @brief Native EKLT wall time excluding FIBAR in milliseconds.
+        double eklt_ms{0.0};
+        /// @brief Complete native event-batch wall time in milliseconds.
+        double native_total_ms{0.0};
+
+        /// @brief Check finite, nonnegative, additive timing invariants.
+        /// @return True when the sample describes one accepted non-empty batch.
+        bool valid() const;
+    };
+
     /// @brief Lightweight owning state for one track at a snapshot boundary.
     /// @details Excludes event buffers, gradients, and optimizer caches so
     ///          visualization and generated wrappers cannot retain algorithm
@@ -251,6 +271,11 @@ namespace eklt_core
         /// @return Statistics with an up-to-date active-track count.
         STrackerStatistics statistics() const;
 
+        /// @brief Return timing for the most recently accepted non-empty event batch.
+        /// @return Valid timing after a successful batch; invalid after reset or
+        ///         a rejected or exceptional batch.
+        STrackerTimingSample lastProcessingTiming() const;
+
         /// @brief Return the number of live timestamped gradient caches.
         /// @return Cache count owned by the native optimizer.
         std::size_t gradientCacheCount() const;
@@ -290,6 +315,7 @@ namespace eklt_core
         CPhotometricOptimizer optimizer_;
         std::unique_ptr<event_recon_fibar_core::CFibarReconstructor> fibar_reconstructor_;
         STrackerStatistics statistics_;
+        STrackerTimingSample last_processing_timing_;
         int next_track_id_{0};
         int64_t most_current_t_us_{-1};
         std::size_t events_since_reconstruction_{0};

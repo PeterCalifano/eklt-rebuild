@@ -33,10 +33,41 @@ add_subdirectory(
   "${CMAKE_CURRENT_BINARY_DIR}/eklt_rebuild_core"
 )
 
+# PNG persistence is owned only by the ROS2 output boundary.
+find_package(OpenCV 4 REQUIRED COMPONENTS core imgcodecs)
+add_library(reconstructed_frame_writer STATIC
+  src/reconstructed_frame_writer.cpp
+)
+target_compile_features(reconstructed_frame_writer PUBLIC cxx_std_17)
+target_include_directories(reconstructed_frame_writer
+  PUBLIC
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+)
+target_link_libraries(reconstructed_frame_writer
+  PRIVATE
+    ${OpenCV_LIBRARIES}
+)
+
+add_library(event_packet_adapter STATIC
+  src/event_packet_decoder.cpp
+)
+target_include_directories(event_packet_adapter
+  PUBLIC
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+)
+target_link_libraries(event_packet_adapter
+  eklt_rebuild::eklt-rebuild
+)
+ament_target_dependencies(event_packet_adapter
+  event_camera_msgs
+  event_camera_codecs
+)
+
 add_executable(event_packet_reconstruction_debug
   src/event_packet_reconstruction_debug.cpp
 )
 target_link_libraries(event_packet_reconstruction_debug
+  event_packet_adapter
   eklt_rebuild::eklt-rebuild
 )
 ament_target_dependencies(event_packet_reconstruction_debug
@@ -50,8 +81,11 @@ add_executable(event_only_eklt_node
   src/event_only_eklt_node.cpp
 )
 target_link_libraries(event_only_eklt_node
+  event_packet_adapter
+  reconstructed_frame_writer
   eklt_rebuild::eklt-rebuild
   eklt_rebuild::eklt_core
+  eklt_rebuild::visualization
 )
 ament_target_dependencies(event_only_eklt_node
   rclcpp
@@ -61,14 +95,39 @@ ament_target_dependencies(event_only_eklt_node
   event_camera_codecs
 )
 
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+
+  ament_add_gtest(test_event_packet_adapter
+    test/test_event_packet_adapter.cpp
+  )
+  target_link_libraries(test_event_packet_adapter
+    event_packet_adapter
+    eklt_rebuild::eklt-rebuild
+    eklt_rebuild::eklt_core
+  )
+  ament_target_dependencies(test_event_packet_adapter
+    event_camera_msgs
+    event_camera_codecs
+  )
+
+  ament_add_gtest(test_reconstructed_frame_writer
+    test/test_reconstructed_frame_writer.cpp
+  )
+  target_link_libraries(test_reconstructed_frame_writer
+    reconstructed_frame_writer
+    ${OpenCV_LIBRARIES}
+  )
+endif()
+
 install(TARGETS
   event_packet_reconstruction_debug
   event_only_eklt_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
-install(DIRECTORY config
-  DESTINATION share/${PROJECT_NAME}
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../../config/"
+  DESTINATION share/${PROJECT_NAME}/config
 )
 
 ament_package()

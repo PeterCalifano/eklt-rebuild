@@ -1,0 +1,51 @@
+eklt_rebuild_event_only:
+  ros__parameters:
+    events_topic: /events
+    events_qos_depth: 4
+    tracks_topic: /eklt/tracks
+    stats_topic: /eklt/stats
+    init_debug_image_topic: /eklt/init_debug_image
+    feature_tracks_topic: /eklt/feature_tracks
+    tracks_file_txt: ""
+    processing_timing_file_csv: ""
+    feature_provider: fibar_harris
+    patch_provider: fibar
+    bootstrap_mode: events
+    superevent_enabled: false
+    max_corners: 100
+    min_corners: 25
+    min_distance: 10.0
+    quality_level: 0.01
+    block_size: 3
+    harris_k: 0.04
+    patch_size: 25
+    batch_size: 300
+    update_every_n_events: 20
+    max_num_iterations: 10
+    tracking_quality: 0.1
+    displacement_px: 0.6
+    log_eps: 0.01
+    first_image_t_us: -1
+    event_only_reconstruction_interval_events: 5000
+    fibar_cutoff_time_us: 10000
+    fibar_fill_ratio: 0.5
+    fibar_use_spatial_filter: true
+    display_features: true
+    display_feature_id: false
+    display_feature_patches: false
+    scale: 4.0
+    arrow_length: 5.0
+    visualization_max_rate_hz: 30.0
+    reconstructed_frames_directory: ""
+    reconstructed_frames_stride: 1
+    reconstructed_frames_max_count: 0
+    reconstructed_frames_png_compression: 3
+
+eklt_rebuild_reconstruction_debug:
+  ros__parameters:
+    events_topic: /events
+    events_qos_depth: 4
+    image_topic: /event_reconstruction
+    fibar_cutoff_time_us: 10000
+    fibar_fill_ratio: 0.5
+    fibar_use_spatial_filter: true

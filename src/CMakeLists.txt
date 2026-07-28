@@ -18,6 +18,12 @@ set(EKLT_CORE_SOURCES
     eklt_core/photometric_patch_tracker.cpp
     eklt_core/tracker_orchestrator.cpp
 )
+set(EKLT_INSTALL_VISUALIZATION_HEADERS
+    "${CMAKE_CURRENT_SOURCE_DIR}/visualization/feature_track_renderer.h"
+)
+set(EKLT_VISUALIZATION_SOURCES
+    visualization/feature_track_renderer.cpp
+)
 
 # Publish the provider, photometric, and orchestration interfaces independently
 # of ROS with the same C++17 baseline as the complete native implementation.
@@ -78,13 +84,14 @@ if(NOT TARGET fibar_lib::fibar_lib)
     add_library(fibar_lib::fibar_lib ALIAS fibar_lib)
 endif()
 
-# Compile the native facade and Eigen adapter into one published library while
-# retaining their distinct component directories and C++ namespaces.
+# Compile algorithms, reconstruction, visualization, and wrapper adapters into
+# one published library while retaining explicit source/API boundaries.
 add_library(
     ${LIB_TARGET_NAME}
     ${EKLT_CORE_SOURCES}
+    ${EKLT_VISUALIZATION_SOURCES}
     event_recon_fibar_core/fibar_reconstructor.cpp
-    event_recon_fibar_adapters/fibar_adapters.cpp
+    wrap_adapters/fibar_adapters.cpp
 )
 add_library(
     ${LIB_NAMESPACE}::${LIB_TARGET_NAME}
@@ -95,7 +102,11 @@ add_library(
     ALIAS ${LIB_TARGET_NAME}
 )
 add_library(
-    ${LIB_NAMESPACE}::event_recon_fibar_adapters
+    ${LIB_NAMESPACE}::visualization
+    ALIAS ${LIB_TARGET_NAME}
+)
+add_library(
+    ${LIB_NAMESPACE}::wrap_adapters
     ALIAS ${LIB_TARGET_NAME}
 )
 target_compile_features(${LIB_TARGET_NAME} PUBLIC cxx_std_17)
@@ -168,15 +179,19 @@ install(
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/eklt_core
 )
 install(
+    FILES ${EKLT_INSTALL_VISUALIZATION_HEADERS}
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/visualization
+)
+install(
     FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/event_recon_fibar_core/fibar_reconstructor.h"
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/event_recon_fibar_core
 )
 install(
     FILES
-        "${CMAKE_CURRENT_SOURCE_DIR}/event_recon_fibar_adapters/GtsamAliases.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/event_recon_fibar_adapters/fibar_adapters.h"
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/event_recon_fibar_adapters
+        "${CMAKE_CURRENT_SOURCE_DIR}/wrap_adapters/GtsamAliases.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/wrap_adapters/fibar_adapters.h"
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/wrap_adapters
 )
 install(
     EXPORT ${EKLT_EXPORT_SET}

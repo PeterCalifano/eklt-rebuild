@@ -8,6 +8,7 @@ on:
     paths:
       - "README.md"
       - "include/**"
+      - "ros1/**"
       - "src/**"
       - "doc/**"
       - "cmake/**"
@@ -19,6 +20,7 @@ on:
     paths:
       - "README.md"
       - "include/**"
+      - "ros1/**"
       - "src/**"
       - "doc/**"
       - "cmake/**"
