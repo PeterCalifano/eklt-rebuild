@@ -232,14 +232,6 @@ cmake --build "${build_dir}" --parallel "${jobs}"
 
 if [[ "${run_tests}" == true ]]; then
     ctest --test-dir "${build_dir}" --output-on-failure --no-tests=error
-    if [[ "${build_python}" == true ]]; then
-        # In-tree wrapper tests load the canonical src/ library output; wheel
-        # and install relocation remain the packaging layer's responsibility.
-        native_library_path="${build_dir}/src:${build_dir}"
-        PYTHONPATH="${repo_root}/python${PYTHONPATH:+:${PYTHONPATH}}" \
-        LD_LIBRARY_PATH="${native_library_path}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" \
-            python3 -m pytest -q "${repo_root}/python/tests"
-    fi
 fi
 
 if [[ "${build_docs}" == true ]]; then

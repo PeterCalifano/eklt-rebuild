@@ -3,8 +3,8 @@
 This checklist records the semantic upgrade of `rpg_eklt` from its mixed
 template snapshot around `cpp_cuda_template_project` v1.2.0 to the reviewed
 v1.11.3 donor revision (`dbffe4d4babb88a8682bfd19cf2bea3bc93fe252`).
-The one later inherited wrapper helper accepted for Stage 15 comes from the
-reviewed parent v1.12.0 commit recorded in that stage; this explicit exception
+The later inherited wrapper-helper set accepted for Stage 15 comes from the
+signed parent v1.12.1 release recorded in that stage; this explicit exception
 does not change the general v1.11.3 alignment baseline. The live dirty checkout
 is authoritative: existing EKLT, event-only, FIBAR, ROS2, documentation, and
 test work must be preserved.
@@ -214,9 +214,9 @@ Acceptance evidence is recorded in
 - [x] Do not import donor recursive `VerifyTemplateProject*` fixtures; prove
       the product contract with fresh builds, Catch2, CI, install, and external
       consumers.
-- [ ] Complete the accepted parent-helper synchronization and wrapper build
-      foundation only in Stage 15, using the exact v1.12.0 commit and blob
-      recorded there.
+- [x] Complete the accepted parent-helper synchronization and wrapper build
+      foundation only in Stage 15, using the exact v1.12.1 release commit and
+      helper blobs recorded there.
 - [ ] Replace the dirty broad Python native-library scan with explicit
       target-derived runtime packaging only in Stage 16.
 - [ ] Refresh historical acceptance text that names separate
@@ -342,24 +342,44 @@ Each functional stage is exactly one mandatory user-commit boundary:
 
 ## Stage 15 - Accepted wrapper build foundation
 
-- [ ] Record the resolved parent blocker at `v1.12.0`, commit
-      `b277e4b84e2f1e501d6c2e73370efe0ecd101f23`.
-- [ ] Sync `HandleWrapper.cmake` byte-for-byte from that commit; the expected
-      blob is `367b6c3a226dc6fb64e35f471dfb5cd63b43262c`.
-- [ ] Stage `.gitmodules`, the pinned read-only `lib/wrap` gitlink,
+- [x] Record signed parent release `v1.12.1`, peeled commit
+      `480d10a692836040bcae2023e763c553acfcc64d`.
+- [x] Sync the split wrapper-helper set byte-for-byte from that commit:
+      `HandleWrapper.cmake` at
+      `769d275a26a4a9baaf687c05a5dcd5a44b9051bf`,
+      `HandlePythonWrapper.cmake` at
+      `6a1be90f021a10bdcdb5b54f0b030c3c96549deb`,
+      `HandleMatlabWrapper.cmake` at
+      `ed8db9d8fbac7edaca645dbdaaea0d591bdb2676`, and
+      `StagePythonRuntimeArtifacts.cmake` at
+      `1ecd54164b5c5f9ef61ab2ad794640898d12e374`.
+- [x] Stage `.gitmodules`, the pinned read-only `lib/wrap` gitlink,
       `wrap_interfaces/`, and project-owned wrapper CMake configuration.
-- [ ] Generate wrappers against the canonical target without staging generated
+- [x] Keep generated wrapper metadata below `wrap_interfaces/python/` so
+      wrapper configuration cannot overwrite the separately owned
+      repository-level `eklt-bridge` distribution.
+- [x] Keep `build_lib.sh --python` focused on native and generated-wrapper
+      CTest; do not couple it to the separate `eklt-bridge` pytest suite.
+- [x] Generate wrappers against the canonical target without staging generated
       output.
-- [ ] Keep Python distribution policy, MATLAB packaging, dataset utilities,
+- [x] Exclude checkout-only wrapper links, generated wrapper metadata, and the
+      external gtwrap checkout from source packaging.
+- [x] Validate shared and static warnings-as-errors builds, wrapper imports and
+      API calls, native CTests, installation, relocated loading, external
+      installed consumers, source packaging, Doxygen, and exact-index parity.
+- [x] Keep final Python distribution policy, MATLAB packaging, dataset utilities,
       and demo orchestration outside this foundation commit.
-- [ ] Stop for the user commit titled
-      `Align generated-wrapper support with template v1.12.0`.
+- [x] Stop for the user commit titled
+      `Align generated-wrapper support with template v1.12.1`.
 
 ## Stage 16 - Portable Python package
 
 - [ ] Publish the `eklt-rebuild` distribution with the identifier-safe
       `eklt_rebuild` import package, following the root project name without
       exposing an invalid hyphenated Python identifier.
+- [ ] Own its templates, wheel metadata, and tests below
+      `wrap_interfaces/python/`; keep repository-level `python/` dedicated to
+      the separate `eklt-bridge` distribution.
 - [ ] Preserve `eklt_bridge` as its existing separately owned distribution and
       do not silently absorb `event_vision_utils` into either Python package. // Review note: Guideline is to prefer clean and clear design without indirections, excessive complexity to keeping backward compatibility at all costs. If this is clean enough and required for compatibility with existing external packages (but if implemenation is currently in this repo but made "compatible", then keep it)
 - [ ] Package only explicit target-derived runtime artifacts.
@@ -491,8 +511,8 @@ Each handoff stage remains one user commit:
 | 11 - Product-native library consolidation | accepted | Exact-index shared/static Werror 33/33, installed consumers, Doxygen, one-library layout, source package, staged-byte parity, and live ROS2 build passed | `78bfa69e008dd65b695b1a4f8c8aa192ada2e3a9` |
 | 12 - CI and development environment | accepted | Exact-index workflow semantics, preserved filters and names, Bash, ShellCheck, BuildKit checks, and the Ubuntu 20.04 image build passed | `7ab4df431104a0c63939746ba7889299a3403746` |
 | 13 - Legacy ROS1 C++ integration | accepted | Exact-index shared/static Werror 43/43 including synthetic KLT, FIBAR/Ceres, and reinitialization algorithm paths; Noetic catkin 51/51; installed consumers and legacy headers, launch/linkage checks, Doxygen, source packaging, structured/shell validation, and staged-byte parity passed | `9c731b88ea82af9b70770ca02941b9d4e19c8c3d` |
-| 14 - ROS2 event-only overlay | awaiting user commit | Exact-index shared/static Werror 48/48, installed consumers, Doxygen, colcon 2/2 with eight GTest cases, and the root `ros1/`, `src/visualization/`, and `src/wrap_adapters/` boundaries passed. Shared config installation, legacy and ELOPE tracking with bounded PNG output, advertised/fallback ELOPE geometry resolution, the Python definition-layout audit, and structured/shell/package gates passed. The bounded official ELOPE timing run produced 200 additive rows and a visually reviewed, unit-labeled stacked plot with matching summary metadata, 82,924 KiB peak RSS, and no swaps; the earlier full converted bag retained 99.93% duration coverage | `pending` |
-| 15 - Accepted wrapper build foundation | pending | Not run; requires accepted Stage 14 checkpoint | - |
+| 14 - ROS2 event-only overlay | accepted | Exact-index shared/static Werror 48/48, installed consumers, Doxygen, colcon 2/2 with eight GTest cases, and the root `ros1/`, `src/visualization/`, and `src/wrap_adapters/` boundaries passed. Shared config installation, legacy and ELOPE tracking with bounded PNG output, advertised/fallback ELOPE geometry resolution, the Python definition-layout audit, and structured/shell/package gates passed. The bounded official ELOPE timing run produced 200 additive rows and a visually reviewed, unit-labeled stacked plot with matching summary metadata, 82,924 KiB peak RSS, and no swaps; the earlier full converted bag retained 99.93% duration coverage | `8d8ea370af29acfccf7044060809ed686b9e3f45` |
+| 15 - Accepted wrapper build foundation | awaiting user commit | Signed v1.12.1 helper-set blob parity; exact-index shared/static Werror 49/49; build-linked, installed, and relocated Python imports plus FIBAR API calls; installed C++ consumers; Doxygen; source-package exclusions; and staged-byte parity passed | `pending` |
 | 16 - Portable Python package | pending | Not run; requires accepted Stage 15 checkpoint | - |
 | 17 - MATLAB R2024b wrapper | pending | Not run; requires accepted Stage 16 checkpoint | - |
 | 18 - `event_vision_utils` data foundation | pending | Not run; requires accepted Stage 17 checkpoint | - |

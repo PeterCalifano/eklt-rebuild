@@ -2,3 +2,6 @@
 	path = lib/fibar_lib
 	url = git@github.com:ros-event-camera/fibar_lib.git
 	branch = release
+[submodule "lib/wrap"]
+	path = lib/wrap
+	url = git@github.com:PeterCalifano/wrap.git

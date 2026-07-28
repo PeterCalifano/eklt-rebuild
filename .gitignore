@@ -14,6 +14,7 @@ log*/
 *.pyd
 Testing/
 lib.root-owned-backup/
+**/_wrapper_build.py
 
 # CMake and CPack generated files
 CMakeCache.txt

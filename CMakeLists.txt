@@ -218,47 +218,9 @@ if((BUILD_AS_MAIN_PROJECT OR EKLT_BUILD_ROS1) AND
 endif()
 
 if(BUILD_AS_MAIN_PROJECT AND (EKLT_BUILD_PYTHON OR EKLT_BUILD_MATLAB))
-    set(${LIB_NAMESPACE}_BUILD_PYTHON_WRAPPER "${EKLT_BUILD_PYTHON}")
-    set(${LIB_NAMESPACE}_BUILD_MATLAB_WRAPPER "${EKLT_BUILD_MATLAB}")
-    set(
-        ${LIB_NAMESPACE}_WRAPPER_INTERFACE_FILES
-        "${CMAKE_CURRENT_SOURCE_DIR}/wrap_interfaces/fibar_reconstructor.i"
-        CACHE STRING "Ordered gtwrap interface files for EKLT" FORCE
-    )
-    set(
-        ${LIB_NAMESPACE}_GTWRAP_TOP_NAMESPACE
-        "wrap_adapters"
-        CACHE STRING "Top namespace used for EKLT gtwrap generation" FORCE
-    )
-    set(
-        ${LIB_NAMESPACE}_GTWRAP_ROOT_DIR
-        "${CMAKE_CURRENT_SOURCE_DIR}/lib/wrap"
-        CACHE PATH "Pinned local gtwrap checkout" FORCE
-    )
-    set(
-        GTWRAP_SYNC_TO_MASTER
-        OFF CACHE BOOL "Keep the pinned gtwrap checkout unchanged" FORCE
-    )
-    set(
-        GTWRAP_INIT_SUBMODULE_IF_MISSING
-        OFF CACHE BOOL "Do not mutate submodules during CMake configure" FORCE
-    )
-    set(
-        GTWRAP_ADD_SUBMODULE_IF_MISSING
-        OFF CACHE BOOL "Do not add submodules during CMake configure" FORCE
-    )
-    set(LIBNAME_WRAP_TARGET ${LIB_TARGET_NAME})
-
-    if(EKLT_BUILD_MATLAB AND NOT DEFINED Matlab_ROOT_DIR)
-        set(
-            Matlab_ROOT_DIR
-            "/usr/local/MATLAB/${EKLT_MATLAB_RELEASE}"
-            CACHE PATH "MATLAB root used for EKLT MEX generation"
-        )
-    endif()
-
-    include(cmake/HandleWrapper.cmake)
-    handle_gtwrappers()
+    # Keep wrapper-generated Python metadata separate from the existing
+    # eklt-bridge distribution rooted at repository-level python/.
+    add_subdirectory(wrap_interfaces)
 endif()
 
 if(BUILD_AS_MAIN_PROJECT AND EKLT_BUILD_DOCS)
@@ -304,10 +266,13 @@ if(BUILD_AS_MAIN_PROJECT)
         "^${_eklt_source_root_regex}/(.*/)?\\.pytest_cache/"
         "^${_eklt_source_root_regex}/(.*/)?\\.mypy_cache/"
         "^${_eklt_source_root_regex}/(.*/)?__pycache__/"
+        "^${_eklt_source_root_regex}/(.*/)?_wrapper_build\\.py$"
         "^${_eklt_source_root_regex}/.*\\.py[cod]$"
         "^${_eklt_source_root_regex}/.*\\.so(\\..*)?$"
         "^${_eklt_source_root_regex}/.*\\.(dylib|dll|pyd)$"
         "^${_eklt_source_root_regex}/CONTEXT\\.md$"
+        "^${_eklt_source_root_regex}/lib/wrap/"
+        "^${_eklt_source_root_regex}/wrap_interfaces/python/(pyproject\\.toml|setup\\.py)$"
         "^${_eklt_source_root_regex}/lib\\.root-owned-backup/"
     )
     include(CPack)
