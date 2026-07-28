@@ -396,13 +396,20 @@ Each functional stage is exactly one mandatory user-commit boundary:
 
 ## Stage 17 - MATLAB R2024b wrapper
 
-- [ ] Generate MATLAB bindings from the shared declarations and canonical
+- [x] Generate MATLAB bindings from the shared declarations and canonical
       native target.
-- [ ] Preserve Eigen-backed exchange and adapter/orchestrator boundaries.
-- [ ] Validate MEX and toolbox output with the documented system-runtime
+- [x] Preserve Eigen-backed exchange and adapter/orchestrator boundaries.
+- [x] Derive the identifier-safe `eklt_rebuild` MEX module name from the root
+      project while retaining `eklt-rebuild` for the published native target.
+- [x] Co-locate only the exact shared native target with the merged toolbox and
+      use `$ORIGIN` or `@loader_path`; keep static toolboxes single-module.
+- [x] Validate MEX and toolbox output with the documented system-runtime
       preload.
-- [ ] Do not add a repository-local MATLAB launcher.
-- [ ] Stop for the user commit titled
+- [x] Cover Eigen image/patch exchange, atomic bad-batch recovery, reset/reuse,
+      teardown, shared/static installs, relocation, and simultaneous Python
+      generation.
+- [x] Do not add a repository-local MATLAB launcher.
+- [x] Stop for the user commit titled
       `Add the MATLAB R2024b EKLT wrapper`.
 
 ## Stage 18 - `event_vision_utils` data foundation
@@ -518,8 +525,8 @@ Each handoff stage remains one user commit:
 | 13 - Legacy ROS1 C++ integration | accepted | Exact-index shared/static Werror 43/43 including synthetic KLT, FIBAR/Ceres, and reinitialization algorithm paths; Noetic catkin 51/51; installed consumers and legacy headers, launch/linkage checks, Doxygen, source packaging, structured/shell validation, and staged-byte parity passed | `9c731b88ea82af9b70770ca02941b9d4e19c8c3d` |
 | 14 - ROS2 event-only overlay | accepted | Exact-index shared/static Werror 48/48, installed consumers, Doxygen, colcon 2/2 with eight GTest cases, and the root `ros1/`, `src/visualization/`, and `src/wrap_adapters/` boundaries passed. Shared config installation, legacy and ELOPE tracking with bounded PNG output, advertised/fallback ELOPE geometry resolution, the Python definition-layout audit, and structured/shell/package gates passed. The bounded official ELOPE timing run produced 200 additive rows and a visually reviewed, unit-labeled stacked plot with matching summary metadata, 82,924 KiB peak RSS, and no swaps; the earlier full converted bag retained 99.93% duration coverage | `8d8ea370af29acfccf7044060809ed686b9e3f45` |
 | 15 - Accepted wrapper build foundation | accepted | Signed v1.12.1 helper-set blob parity; exact-index shared/static Werror 49/49; build-linked, installed, and relocated Python imports plus FIBAR API calls; installed C++ consumers; Doxygen; source-package exclusions; and staged-byte parity passed | `bef852920d153a07229d7b7b71e696a35a065961` |
-| 16 - Portable Python package | awaiting user commit | Exact-index shared/static Werror 50/50; wrapper pytest; CMake installs and consumers; shared/static exact-artifact wheels; unrelated-library exclusion; `$ORIGIN`; relocated imports with empty `LD_LIBRARY_PATH`; Doxygen, source-package, structured-file, shell, and staged-byte gates passed | `pending` |
-| 17 - MATLAB R2024b wrapper | pending | Not run; requires accepted Stage 16 checkpoint | - |
+| 16 - Portable Python package | accepted | Exact-index shared/static Werror 50/50; wrapper pytest; CMake installs and consumers; shared/static exact-artifact wheels; unrelated-library exclusion; `$ORIGIN`; relocated imports with empty `LD_LIBRARY_PATH`; Doxygen, source-package, structured-file, shell, and staged-byte gates passed | `af0d766706ce1366010b4d943b72d3d42ee86fb6` |
+| 17 - MATLAB R2024b wrapper | awaiting user commit | Exact-index shared/static Werror 52/52; four R2024b MEX regressions; exact-artifact toolbox installs; `$ORIGIN`; relocated shared/static execution with empty `LD_LIBRARY_PATH`; simultaneous Python generation; installed C++ consumers; MATLAB checkcode, Doxygen, source-package, and staged-byte gates passed | `pending` |
 | 18 - `event_vision_utils` data foundation | pending | Not run; requires accepted Stage 17 checkpoint | - |
 | 19 - Single-sequence ELOPE analysis pipeline | pending | Not run; requires accepted Stage 18 checkpoint | - |
 | 20 - Repository metadata and hygiene | pending | Not run; requires accepted Stage 19 checkpoint | - |

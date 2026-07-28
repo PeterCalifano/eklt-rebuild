@@ -1,0 +1,5 @@
+# The inherited MATLAB helper materializes generated classes and MEX modules
+# here during installation. Keep only this ownership marker under version
+# control; build-tree wrapper output remains disposable.
+*
+!.gitignore

@@ -273,6 +273,8 @@ if(BUILD_AS_MAIN_PROJECT)
         "^${_eklt_source_root_regex}/CONTEXT\\.md$"
         "^${_eklt_source_root_regex}/lib/wrap/"
         "^${_eklt_source_root_regex}/wrap_interfaces/python/(pyproject\\.toml|setup\\.py)$"
+        "^${_eklt_source_root_regex}/wrap_interfaces/matlab/\\+wrap_adapters/"
+        "^${_eklt_source_root_regex}/wrap_interfaces/matlab/eklt_rebuild_wrapper\\.mex[^/]*$"
         "^${_eklt_source_root_regex}/lib\\.root-owned-backup/"
     )
     include(CPack)
