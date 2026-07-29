@@ -77,14 +77,21 @@ def compute_event_rate(events: EventArray,
     Output:
         4 (4,)
     """
+    # Reject an unbounded or nonsensical bin policy before deriving any output
+    # allocation from the event timestamp range.
     if bin_us <= 0:
         raise ValueError("bin_us must be positive")
     if max_bins <= 0:
         raise ValueError("max_bins must be positive")
+
+    # Preserve typed empty outputs so callers can render an explicit empty
+    # diagnostic without inventing a synthetic time bin.
     if events.size == 0:
         empty = np.asarray([], dtype=np.int64)
         return empty, empty.copy(), empty.astype(np.float64)
 
+    # Compute the required allocation with unbounded Python integers, then
+    # enforce the caller's memory contract before constructing arrays.
     start_us = int(events.t_us[0])
     stop_us = int(events.t_us[-1])
     bin_count = (stop_us - start_us) // bin_us + 1
@@ -104,6 +111,9 @@ def compute_event_rate(events: EventArray,
         dtype=np.int64,
         count=events.size,
     )
+
+    # Aggregate every event exactly once and retain explicit starts for empty
+    # bins so the rate series remains uniformly sampled.
     counts = np.bincount(
         bin_indices,
         minlength=bin_count,
@@ -141,6 +151,8 @@ def event_rate_plot_contract(event_count: int,
     Output:
         Event Rate [events/s]
     """
+    # Normalize provenance before embedding it in visible text so every saved
+    # chart carries a complete and non-ambiguous source description.
     if event_count < 0:
         raise ValueError("event_count must be nonnegative")
     if bin_us <= 0:
@@ -202,6 +214,8 @@ def render_event_rate_plot(events: EventArray,
     Output:
         event_rate.png
     """
+    # Keep binning and presentation separate so transport-specific readers can
+    # reuse the same renderer after producing an equivalent bounded series.
     _, _, rates_hz = compute_event_rate(
         events,
         bin_us=bin_us,
@@ -262,6 +276,8 @@ def render_event_rate_series(rates_hz: np.ndarray,
     Output:
         event_rate.png
     """
+    # Validate geometry and the complete numerical series before allocating a
+    # Matplotlib figure or touching the destination path.
     if width < 480 or height < 320:
         raise ValueError(
             "event-rate chart must be at least 480 by 320 pixels"
@@ -283,6 +299,8 @@ def render_event_rate_series(rates_hz: np.ndarray,
             "event rates must be finite and nonnegative"
         )
 
+    # Derive visible labels and x coordinates from the same fixed-width bin
+    # policy so metadata and plotted samples cannot diverge.
     contract = event_rate_plot_contract(
         event_count,
         bin_us=bin_us,
@@ -313,6 +331,8 @@ def render_event_rate_series(rates_hz: np.ndarray,
     axis.set_ylabel(contract.y_label)
     axis.grid(True, color="#D8DDE3", linewidth=0.8)
 
+    # Preserve a meaningful zero-origin scale in both populated and empty
+    # cases; the latter remains an explicit diagnostic rather than a blank PNG.
     if rates.size:
         axis.plot(
             elapsed_s,
@@ -355,6 +375,8 @@ def render_event_rate_series(rates_hz: np.ndarray,
             color="#555555",
         )
 
+    # Publish through an owned temporary sibling so readers see either the
+    # previous complete plot or the complete replacement.
     output = Path(output_path)
     if output.is_symlink():
         plt.close(figure)

@@ -202,6 +202,8 @@ def main(argv: list[str] | None = None) -> int:
     Output:
         0
     """
+    # Collect analysis, geometry, and optional evidence policy before reading
+    # any artifact or changing the selected output directory.
     parser = argparse.ArgumentParser(
         description="Summarize EKLT tracks and write acceptance plots."
     )
@@ -252,6 +254,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
+    # Validate scalar CLI policy first, then preserve the native run manifest
+    # that this analysis will enrich rather than replace semantically.
     _validate_arguments(args)
     started = time.perf_counter()
     base_summary = _load_base_summary(args.base_summary)
@@ -285,6 +289,8 @@ def main(argv: list[str] | None = None) -> int:
         )
     )
 
+    # Resolve all output and inherited-timing paths before cleaning the owned
+    # plot set or publishing a canonical track copy.
     output_dir = _resolve_output_directory(args.output_dir)
     summary_output = _resolve_summary_output(
         output_dir,
@@ -310,6 +316,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     by_id = _group_by_id(rows)
 
+    # Produce the mandatory track views from one grouped representation so
+    # counts, lifetimes, initialization times, and trajectories share inputs.
     track_plots = [
         _plot_active_tracks(
             by_id,
@@ -331,6 +339,8 @@ def main(argv: list[str] | None = None) -> int:
         ),
     ]
 
+    # Render an event-rate plot only when an event source is represented; the
+    # summary still records explicit no-event provenance otherwise.
     event_plots: list[Path] = []
     if event_rate.event_count > 0:
         rates_hz = (
@@ -350,6 +360,8 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
 
+    # Keep optional ground-truth matching independent from native run success,
+    # then derive one combined analysis/native status.
     gt_result = _summarize_ground_truth(
         rows,
         ground_truth_path,
@@ -371,6 +383,8 @@ def main(argv: list[str] | None = None) -> int:
         else "failed"
     )
 
+    # Assemble the manifest and label contracts from exactly the artifacts
+    # generated or retained by this analysis pass.
     generated_plots = [
         *track_plots,
         *event_plots,
@@ -391,6 +405,8 @@ def main(argv: list[str] | None = None) -> int:
     if timing_plot is not None and timing_contract is not None:
         plot_contracts[timing_plot.name] = timing_contract.as_dict()
 
+    # Prefer authoritative event duration and native runtime while retaining
+    # analysis time as a separate diagnostic.
     duration_s = (
         event_rate.duration_s
         if event_rate.duration_s > 0.0
@@ -402,6 +418,9 @@ def main(argv: list[str] | None = None) -> int:
         args.runtime_s,
         analysis_runtime_s,
     )
+
+    # Overlay the stable analysis schema on preserved native fields so Stage 14
+    # conversion/timing evidence remains available to later aggregators.
     summary: dict[str, Any] = dict(base_summary)
     summary.update(
         {
@@ -468,6 +487,9 @@ def _load_base_summary(path: Path | None) -> dict[str, Any]:
     """Load one optional native-run summary before it is replaced."""
     if path is None:
         return {}
+
+    # Preserve arbitrary native evidence fields but require one object and a
+    # status vocabulary understood by the combined-result policy.
     value = json.loads(path.read_text(encoding="utf-8", errors="strict"))
     if not isinstance(value, dict):
         raise ValueError("base summary must contain one JSON object")
@@ -480,6 +502,8 @@ def _load_base_summary(path: Path | None) -> dict[str, Any]:
 
 def _represented_event_limit(summary: dict[str, Any]) -> int | None:
     """Return the exact event count represented by a Stage 14 conversion."""
+    # A missing conversion means the complete source may be analyzed; a
+    # present conversion must advertise one exact positive prefix length.
     conversion = summary.get("elope_conversion")
     if conversion is None:
         return None
@@ -501,6 +525,8 @@ def _represented_event_limit(summary: dict[str, Any]) -> int | None:
 def _resolve_processing_timing(output_dir: Path,
                                base_summary: dict[str, Any]) -> _TimingArtifacts:
     """Validate and normalize optional Stage 14 timing evidence."""
+    # Timing remains optional for non-ROS runs, but a present object must
+    # describe one completely passed and internally bounded diagnostic.
     value = base_summary.get("processing_timing")
     if value is None:
         return None, None, None
@@ -531,6 +557,8 @@ def _resolve_processing_timing(output_dir: Path,
             "[1, sample_count]"
         )
 
+    # Resolve both artifacts into the analysis root and rewrite their manifest
+    # paths to relocatable POSIX-relative form.
     normalized = dict(value)
     resolved_artifacts: dict[str, Path] = {}
     for field_name in ("input_csv", "output_plot"):
@@ -565,6 +593,8 @@ def _resolve_processing_timing(output_dir: Path,
         normalized[field_name] = relative_path.as_posix()
         resolved_artifacts[field_name] = path
 
+    # Reconstruct the shared immutable plot contract from native summary labels
+    # instead of trusting an unvalidated metadata dictionary.
     plot_value = value.get("plot")
     if not isinstance(plot_value, dict):
         raise ValueError(
@@ -619,6 +649,8 @@ def _resolve_runtime_s(base_summary: dict[str, Any],
 
 def _resolve_output_directory(output_path: Path) -> Path:
     """Validate and create the selected analysis artifact root."""
+    # Reject broad roots before directory creation because later cleanup owns a
+    # fixed set of relative plot and track paths.
     if output_path.is_symlink():
         raise ValueError(
             f"refusing symlinked output directory: {output_path}"
@@ -654,6 +686,8 @@ def _remove_owned_plots(output_dir: Path) -> None:
 
 def _validate_owned_plots(output_dir: Path) -> list[Path]:
     """Validate and return every plot path owned by this analysis."""
+    # Validate the shared parent first so no per-file check follows a symlinked
+    # plots directory.
     plots_dir = output_dir / "plots"
     if plots_dir.is_symlink():
         raise ValueError(
@@ -675,6 +709,9 @@ def _validate_owned_plots(output_dir: Path) -> list[Path]:
             "gt_error.png",
         )
     ]
+
+    # Complete validation of the deletion set precedes any removal performed
+    # by the caller.
     for path in owned_paths:
         if path.is_symlink():
             raise ValueError(
@@ -741,6 +778,8 @@ def _resolve_summary_output(output_dir: Path,
 def _ensure_output_tracks(track_path: Path,
                           output_dir: Path) -> Path:
     """Copy an external track artifact atomically into the analysis root."""
+    # Reuse an already canonical input in place; external files are copied
+    # through the prevalidated temporary sibling.
     output_path, temporary_path = _validate_output_track_target(output_dir)
     if track_path.resolve() == output_path.resolve(strict=False):
         return output_path
@@ -755,6 +794,8 @@ def _ensure_output_tracks(track_path: Path,
 
 def _validate_output_track_target(output_dir: Path) -> tuple[Path, Path]:
     """Validate canonical track and temporary targets without changing them."""
+    # Validate public and temporary paths together so copying never begins with
+    # an incomplete ownership check.
     output_path = output_dir / "tracks.txt"
     if output_path.is_symlink():
         raise ValueError(
@@ -799,6 +840,9 @@ def _plot_active_tracks(by_id: dict[int, list[TrackSample]],
     """Render feature lifetimes overlapping each fixed tracker-time bin."""
     contract = TRACK_PLOT_CONTRACTS[output_path.name]
     figure, axis = _new_plot(contract)
+
+    # Plot lifetime overlap rather than observation density, retaining an
+    # explicit labeled empty chart when no tracks are available.
     if by_id:
         elapsed_s, values, duration_s = _active_track_series(by_id)
         axis.plot(elapsed_s, values, color="#1C5FA0", linewidth=1.8)
@@ -868,6 +912,9 @@ def _plot_track_lifetimes(by_id: dict[int, list[TrackSample]],
     """Render descending feature lifetimes by track rank."""
     contract = TRACK_PLOT_CONTRACTS[output_path.name]
     figure, axis = _new_plot(contract)
+
+    # Sort the complete population before applying the display-only top-100
+    # bound so the badge can report retained versus total tracks.
     lifetimes = sorted(
         (
             max(0.0, rows[-1].t_s - rows[0].t_s)
@@ -906,6 +953,9 @@ def _plot_reinit_timeline(by_id: dict[int, list[TrackSample]],
     """Render cumulative feature starts over elapsed tracker time."""
     contract = TRACK_PLOT_CONTRACTS[output_path.name]
     figure, axis = _new_plot(contract)
+
+    # Use each stable feature's first observation as its initialization event,
+    # then preserve causal order in the cumulative step plot.
     starts = sorted(
         rows[0].t_s
         for rows in by_id.values()
@@ -949,6 +999,8 @@ def _plot_track_xy(by_id: dict[int, list[TrackSample]],
     maximum_y = float(image_height - 1)
     clipped_observations = 0
 
+    # Preserve native coordinates in the track artifact while clipping only
+    # plotted samples to the authoritative fixed sensor plane.
     for index, (track_id, track_rows) in enumerate(
         sorted(by_id.items())
     ):
@@ -969,6 +1021,9 @@ def _plot_track_xy(by_id: dict[int, list[TrackSample]],
             )
         )
         color = _plot_color(index)
+
+        # Draw every trajectory but label only a bounded prefix to avoid turning
+        # dense runs into unreadable text fields.
         axis.plot(
             clipped_x,
             clipped_y,
@@ -1028,6 +1083,8 @@ def _read_event_source(*,
                        height: int | None,
                        event_count_limit: int | None) -> EventRate:
     """Read the accepted ELOPE source or return explicit no-event metadata."""
+    # Normalize the bin policy even for absent input so summary metadata keeps
+    # one consistent unit contract.
     bin_us = max(int(round(bin_ms * 1000.0)), 1)
     if event_npz is None:
         return EventRate(
@@ -1060,6 +1117,9 @@ def _read_event_rate_npz(path: Path,
         height=height,
     )
     source_events = dataset.events
+
+    # Restrict analysis to the exact prefix represented by converted tracking
+    # input, never to events the native run did not process.
     if (
         event_count_limit is not None and
         event_count_limit > source_events.size
@@ -1078,6 +1138,9 @@ def _read_event_rate_npz(path: Path,
         bin_us=bin_us,
         max_bins=_MAX_EVENT_RATE_BINS,
     )
+
+    # Preserve adapter-advertised geometry provenance alongside the bounded
+    # rate series used for plotting.
     geometry_source = str(
         dataset.metadata.attributes.get(
             "geometry_source",
@@ -1108,6 +1171,8 @@ def _resolve_image_geometry(event_rate: EventRate,
                             explicit_width: int | None,
                             explicit_height: int | None) -> tuple[int, int, str]:
     """Resolve one fixed track-plot image plane from input or explicit data."""
+    # Explicit geometry is an indivisible pair because either missing dimension
+    # would make fixed-plane clipping ambiguous.
     if (explicit_width is None) != (explicit_height is None):
         raise ValueError(
             "--event-width and --event-height must be provided together"
@@ -1125,6 +1190,9 @@ def _resolve_image_geometry(event_rate: EventRate,
         event_rate.image_width,
         event_rate.image_height,
     )
+
+    # Prefer the event source as authoritative and permit explicit dimensions
+    # only when they confirm it exactly.
     if (advertised[0] is None) != (advertised[1] is None):
         raise ValueError(
             "event source returned incomplete image geometry"
@@ -1170,6 +1238,8 @@ def _summarize_ground_truth(rows: Sequence[TrackSample],
             "ground-truth rows are required for an explicit source"
         )
 
+    # Record source and policy before matching so even a zero-match result
+    # remains self-describing.
     metrics: dict[str, float | int | str] = {
         "source": str(ground_truth_path),
         "max_dt_s": max_dt_s,
@@ -1203,6 +1273,8 @@ def _match_ground_truth_errors(rows: Sequence[TrackSample],
                                ground_truth_rows: Sequence[TrackSample],
                                max_dt_s: float) -> list[float]:
     """Return nearest-in-time same-ID Euclidean pixel errors."""
+    # Index ground truth by stable feature and ordered timestamp so each tracker
+    # row needs only the two neighbors around its insertion point.
     by_id = _group_by_id(ground_truth_rows)
     gt_times = {
         track_id: [row.t_s for row in track_rows]
@@ -1221,6 +1293,8 @@ def _match_ground_truth_errors(rows: Sequence[TrackSample],
         if insert_at > 0:
             nearest_indices.append(insert_at - 1)
 
+        # Choose the closest admissible same-ID neighbor deterministically,
+        # preferring the later candidate only when it is strictly closer.
         best: tuple[float, TrackSample] | None = None
         for index in nearest_indices:
             candidate = candidates[index]
@@ -1255,6 +1329,9 @@ def _ground_truth_metrics(errors: Sequence[float],
             "matched_rows": 0,
             "match_fraction": 0.0,
         }
+
+    # Normalize by the maximum before squaring so finite but extreme error
+    # values cannot overflow the RMSE calculation.
     values = np.asarray(errors, dtype=np.float64)
     maximum = float(values.max())
     normalized = (
@@ -1289,6 +1366,9 @@ def _plot_gt_error(errors: Sequence[float],
     """Render nearest-in-time EKLT position errors by matched-row index."""
     contract = TRACK_PLOT_CONTRACTS[output_path.name]
     figure, axis = _new_plot(contract)
+
+    # Reuse the overflow-safe normalized RMSE calculation shown in summary
+    # metrics so the annotation and machine-readable value remain consistent.
     if errors:
         values = np.asarray(errors, dtype=np.float64)
         indices = np.arange(1, values.size + 1)
@@ -1406,6 +1486,7 @@ def _show_empty(axis: Axes, message: str) -> None:
 
 def _save_figure(figure: Figure, output_path: Path) -> Path:
     """Atomically publish one analytical PNG and release its canvas."""
+    # Validate both publication paths before encoding the complete figure.
     if output_path.is_symlink():
         plt.close(figure)
         raise ValueError(
@@ -1420,6 +1501,9 @@ def _save_figure(figure: Figure, output_path: Path) -> Path:
         raise ValueError(
             f"refusing symlinked temporary plot: {temporary_path}"
         )
+
+    # Always release the Matplotlib canvas and stale temporary sibling whether
+    # encoding, replacement, or later filesystem operations fail.
     try:
         figure.savefig(temporary_path, dpi=100)
         os.replace(temporary_path, output_path)
@@ -1446,6 +1530,8 @@ def _plot_color(index: int) -> str:
 
 def _write_summary(path: Path, summary: dict[str, Any]) -> None:
     """Atomically publish one stable JSON analysis artifact."""
+    # Validate public and temporary targets before serializing the complete
+    # stable-key document.
     if path.is_symlink():
         raise ValueError(
             f"refusing symlinked summary output: {path}"

@@ -83,6 +83,8 @@ def load_track_samples(input_path: str | Path) -> list[TrackSample]:
         if not stripped or stripped.startswith("#"):
             continue
 
+        # Decode the complete row before applying field-level constraints so
+        # every malformed token receives the same source-line diagnostic.
         fields = stripped.split()
         if len(fields) != 4:
             raise ValueError(
@@ -100,6 +102,9 @@ def load_track_samples(input_path: str | Path) -> list[TrackSample]:
                 f"{path}:{line_number}: invalid track value"
             ) from exc
 
+        # Enforce only the transport-neutral track contract here. Sensor-plane
+        # bounds remain a consumer policy because native subpixel estimates may
+        # legitimately cross the display boundary.
         if sample.track_id < 0:
             raise ValueError(
                 f"{path}:{line_number}: track id must be nonnegative"
@@ -116,6 +121,8 @@ def load_track_samples(input_path: str | Path) -> list[TrackSample]:
                 f"{path}:{line_number}: timestamp must be nonnegative"
             )
 
+        # Check chronology per feature rather than globally so rows from
+        # independently updated tracks may remain interleaved in file order.
         previous_time = last_time_by_track.get(sample.track_id)
         if previous_time is not None and sample.t_s < previous_time:
             raise ValueError(

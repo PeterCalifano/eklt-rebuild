@@ -88,6 +88,8 @@ class VideoArtifact:
         Output:
             frame.png
         """
+        # Keep serialization explicit so the artifact schema cannot acquire
+        # dataclass implementation details or unstable field names.
         return {
             "kind": self.kind,
             "path": self.path,
@@ -126,6 +128,8 @@ def write_video_or_png_sequence(frames: Iterable[np.ndarray],
     Output:
         1
     """
+    # Validate the stream policy and materialize one validated first frame; it
+    # fixes geometry and dtype expectations for every backend.
     if not np.isfinite(fps) or not 0.0 < fps <= 1000.0:
         raise ValueError("fps must be finite and in (0, 1000]")
 
@@ -136,6 +140,8 @@ def write_video_or_png_sequence(frames: Iterable[np.ndarray],
     except StopIteration as exc:
         raise ValueError("at least one frame is required") from exc
 
+    # Route MP4 requests to the bounded ffmpeg stream when available, otherwise
+    # preserve all frames through the deterministic PNG-sequence fallback.
     if output.suffix.lower() == ".mp4":
         all_frames = chain((first_frame,), frame_iterator)
         if shutil.which("ffmpeg") is not None:
@@ -153,6 +159,8 @@ def write_video_or_png_sequence(frames: Iterable[np.ndarray],
             fps=fps,
         )
 
+    # A file-like PNG target deliberately represents exactly one frame; all
+    # other target forms represent a numbered sequence directory.
     if output.suffix.lower() == ".png":
         try:
             next(frame_iterator)
@@ -209,6 +217,8 @@ def write_event_preview(events: EventArray,
     Output:
         png_sequence
     """
+    # Bound source geometry and the time-window policy before constructing the
+    # lazy slice iterator passed to the generic writer.
     if events.size == 0:
         raise ValueError("event preview requires at least one event")
     if events.width * events.height > _MAX_ENCODED_FRAME_PIXELS:
@@ -223,6 +233,8 @@ def write_event_preview(events: EventArray,
             "mode must be 'polarity_rgb' or 'time_surface'"
         )
 
+    # Keep accumulation time independent from playback rate: callers may choose
+    # either real-time or accelerated presentation without changing frame data.
     return write_video_or_png_sequence(
         _iter_event_preview_frames(
             events,
@@ -239,6 +251,8 @@ def _iter_event_preview_frames(events: EventArray,
                                window_us: int,
                                mode: str) -> Iterator[np.ndarray]:
     """Yield one bounded preview frame per event-time window."""
+    # Convert each slice immediately and release it before advancing to the next
+    # window so retained image state is constant with sequence duration.
     for chunk in iter_time_slices(events, window_us=window_us):
         if mode == "polarity_rgb":
             yield render_polarity_rgb(chunk)
@@ -249,6 +263,8 @@ def _iter_event_preview_frames(events: EventArray,
 def _write_single_png(frame: np.ndarray,
                       output: Path) -> VideoArtifact:
     """Atomically publish one image frame."""
+    # Reject unsafe or incompatible targets before removing a stale temporary
+    # sibling or encoding replacement bytes.
     _reject_symlink(output)
     _reject_non_file_target(output)
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -256,6 +272,8 @@ def _write_single_png(frame: np.ndarray,
         f".{output.stem}.tmp{output.suffix}"
     )
     _remove_owned_temporary_file(temporary_path)
+
+    # Replace the public path only after PIL has completed the temporary file.
     try:
         Image.fromarray(frame).save(temporary_path)
         os.replace(temporary_path, output)
@@ -297,6 +315,9 @@ def _write_png_sequence(frames: Iterable[np.ndarray],
                 raise ValueError(
                     "video frame count exceeds the encoded-frame limit"
                 )
+
+            # The first validated frame establishes a single shape invariant
+            # for the complete staged replacement.
             array = _as_uint8_frame(frame)
             if first_shape is None:
                 first_shape = array.shape
@@ -344,12 +365,16 @@ def _write_mp4_with_ffmpeg(frames: Iterable[np.ndarray],
                             *,
                             fps: float) -> VideoArtifact:
     """Encode one constant-size stream and publish it atomically."""
+    # Convert the first frame before spawning ffmpeg because it fixes raw-video
+    # geometry and guarantees a nonempty input stream.
     frame_iterator = iter(frames)
     try:
         first_frame = _as_rgb_frame(next(frame_iterator))
     except StopIteration as exc:
         raise ValueError("at least one frame is required") from exc
 
+    # Validate the owned publication boundary before creating an encoder
+    # process or its temporary output.
     _reject_symlink(output)
     _reject_non_file_target(output)
     height, width = first_frame.shape[:2]
@@ -358,6 +383,9 @@ def _write_mp4_with_ffmpeg(frames: Iterable[np.ndarray],
         f".{output.stem}.tmp{output.suffix}"
     )
     _remove_owned_temporary_file(temporary_output)
+
+    # Feed raw RGB through one encoder thread and pad only the encoded frame to
+    # the even dimensions required by yuv420p.
     command = [
         "ffmpeg",
         "-y",
@@ -397,6 +425,8 @@ def _write_mp4_with_ffmpeg(frames: Iterable[np.ndarray],
 
     frame_count = 0
     try:
+        # Validate and stream each frame immediately; no full-video buffer or
+        # per-frame artifact list is retained.
         for frame in chain((first_frame,), frame_iterator):
             if frame_count >= _MAX_ENCODED_FRAMES:
                 raise ValueError(
@@ -421,6 +451,8 @@ def _write_mp4_with_ffmpeg(frames: Iterable[np.ndarray],
         temporary_output.unlink(missing_ok=True)
         raise
 
+    # Reject an encoder that exits successfully without a complete output, then
+    # atomically replace the prior public MP4.
     if return_code != 0 or not temporary_output.exists():
         temporary_output.unlink(missing_ok=True)
         raise RuntimeError(
@@ -432,6 +464,9 @@ def _write_mp4_with_ffmpeg(frames: Iterable[np.ndarray],
     except BaseException:
         temporary_output.unlink(missing_ok=True)
         raise
+
+    # Report encoded dimensions after ffmpeg's even-edge padding rather than
+    # the unpadded raw-video input size.
     encoded_width = width + width % 2
     encoded_height = height + height % 2
     return VideoArtifact(
@@ -505,6 +540,9 @@ def _reject_non_file_target(path: Path) -> None:
 def _as_rgb_frame(frame: np.ndarray) -> np.ndarray:
     """Convert one validated frame to contiguous RGB-compatible storage."""
     array = _as_uint8_frame(frame)
+
+    # Expand grayscale and discard alpha explicitly because the ffmpeg input
+    # contract is always packed RGB24.
     if array.ndim == 2:
         return np.repeat(array[:, :, None], 3, axis=2)
     if array.shape[2] == 4:
@@ -537,6 +575,8 @@ def _as_uint8_frame(frame: np.ndarray) -> np.ndarray:
             "frame geometry exceeds the encoded-frame pixel limit"
         )
 
+    # Validate numerical semantics only after the bounded shape check, then
+    # narrow through explicit clipping for integer and floating inputs.
     if array.dtype.kind not in "biuf":
         raise ValueError("frame values must be real numeric values")
     if array.dtype.kind == "f" and not bool(np.all(np.isfinite(array))):

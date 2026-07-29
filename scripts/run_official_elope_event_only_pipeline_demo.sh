@@ -28,6 +28,7 @@ ros_setup="${ROS_SETUP:-/opt/ros/jazzy/setup.bash}"
 overlay_setup="${EKLT_ROS2_SETUP:-}"
 python_bin="${PYTHON:-python3.12}"
 
+# Define the complete single-sequence CLI and failure contract.
 usage() {
     cat <<'USAGE'
 Usage: scripts/run_official_elope_event_only_pipeline_demo.sh [options]
@@ -70,6 +71,8 @@ die() {
     exit 2
 }
 
+# Parse policy before downloading data or creating component output
+# directories.
 while (($# > 0)); do
     case "$1" in
         --input)
@@ -177,6 +180,8 @@ while (($# > 0)); do
     esac
 done
 
+# Resolve the interpreter and indivisible geometry override before selecting an
+# input source.
 command -v "${python_bin}" >/dev/null 2>&1 ||
     die "Python interpreter not found: ${python_bin}"
 if [[ -n "${width}" || -n "${height}" ]]; then
@@ -184,6 +189,8 @@ if [[ -n "${width}" || -n "${height}" ]]; then
         die "--width and --height must be provided together."
 fi
 
+# When no sequence is supplied, request the downloader's deterministic first
+# validated NPZ and consume only its machine-readable path record.
 if [[ -z "${input}" ]]; then
     download_output="$(
         PYTHON="${python_bin}" \
@@ -201,6 +208,8 @@ fi
     die "official ELOPE sequence not found."
 input="$(realpath "${input}")"
 
+# Reject roots that could make component cleanup broad, then establish the
+# fixed reconstruction/tracking directory boundary.
 [[ ! -L "${output_dir}" ]] ||
     die "output directory must not be a symlink: ${output_dir}"
 output_dir="$(realpath -m "${output_dir}")"
@@ -279,6 +288,8 @@ fi
 # Run reconstruction and tracking independently so a missing optional runtime
 # still produces one complete blocked/failed pipeline summary.
 reconstruction_status=0
+# Reconstruction owns its diagnostic artifacts and may report the explicit
+# native-wrapper blocker without preventing later summary publication.
 PYTHON="${python_bin}" \
     "${script_dir}/run_elope_reconstruction_example_demo.sh" \
     --input "${input}" \
@@ -307,6 +318,8 @@ fi
 tracking_arguments+=("${geometry_arguments[@]}")
 
 tracking_status=0
+# Tracking delegates to the accepted synchronous ROS2 EventPacket path and
+# retains its native conversion, timing, log, and track artifacts.
 PYTHON="${python_bin}" \
     "${script_dir}/run_ros2_elope_event_only_example_demo.sh" \
     "${tracking_arguments[@]}" ||
@@ -314,6 +327,8 @@ PYTHON="${python_bin}" \
 
 reconstruction_evaluation_status=3
 if [[ "${reconstruction_status}" -eq 0 ]]; then
+    # Validate reconstruction media and schema only after its producer reports
+    # success; status 3 records a deliberately unattempted evaluator.
     reconstruction_evaluation_status=0
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH="${repo_root}/python${PYTHONPATH:+:${PYTHONPATH}}" \
@@ -328,6 +343,8 @@ tracking_evaluation_status=3
 track_video_status=3
 track_video_evaluation_status=3
 if [[ "${tracking_status}" -eq 0 ]]; then
+    # Enrich a successful native tracking summary with stable analytical plots
+    # before accepting the component.
     analysis_status=0
     analysis_arguments=(
         --tracks "${tracking_dir}/tracks.txt"
@@ -364,6 +381,8 @@ if [[ "${tracking_status}" -eq 0 ]]; then
         analysis_status == 0 &&
         tracking_evaluation_status == 0
     )); then
+        # Encode track video only from an already accepted track artifact, then
+        # independently validate its flattened display and media contract.
         track_video_status=0
         track_video_arguments=(
             --input "${input}"
@@ -437,6 +456,8 @@ status_codes = {
 
 def read_component(relative_path: str) -> dict[str, Any]:
     """Read one component summary or describe its absence."""
+    # Keep component failures representable in the root summary instead of
+    # aborting publication at the first missing or malformed child.
     path = output_dir / relative_path
     if path.is_symlink():
         return {
@@ -472,6 +493,8 @@ def read_component(relative_path: str) -> dict[str, Any]:
     }
 
 
+# Accept the pipeline only when every process status and every independently
+# parsed component summary agrees on success.
 components = {
     "reconstruction": read_component("reconstruction/summary.json"),
     "tracking": read_component("tracking/summary.json"),
@@ -513,6 +536,9 @@ summary = {
         "track_video_summary": "tracking/track_video_summary.json",
     },
 }
+
+# Publish the root result atomically so interrupted orchestration cannot leave
+# a partial status document for later automation.
 summary_path = output_dir / "summary.json"
 if summary_path.is_symlink():
     raise ValueError(
@@ -534,6 +560,8 @@ finally:
 print(summary_path)
 PY
 
+# Map the stable summary vocabulary back to shell statuses used by callers and
+# CI: success, environment blocker, or functional failure.
 pipeline_status="$(
     PYTHONDONTWRITEBYTECODE=1 "${python_bin}" -c \
         'import json, sys; from pathlib import Path; print(json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))["status"])' \

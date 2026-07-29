@@ -119,6 +119,8 @@ def evaluate_run(run_dir: str | Path,
     Output:
         False
     """
+    # Establish the run directory as the trust boundary before reading any
+    # manifest-selected artifact path.
     root = Path(run_dir)
     result = EvaluationResult(passed=True)
     if root.is_symlink():
@@ -140,6 +142,9 @@ def evaluate_run(run_dir: str | Path,
     if not summary_path.is_file():
         result.add_error(f"missing summary.json: {summary_path}")
         return result
+
+    # Parse one strict JSON object first so every subsequent check operates on
+    # the same immutable component manifest.
     try:
         summary_value = json.loads(
             summary_path.read_text(
@@ -155,6 +160,8 @@ def evaluate_run(run_dir: str | Path,
         return result
     summary: dict[str, Any] = summary_value
 
+    # Validate shared scalar fields before selecting the component-specific
+    # reconstruction or tracking contract.
     _check_summary_fields(
         summary,
         result,
@@ -168,6 +175,9 @@ def evaluate_run(run_dir: str | Path,
         _check_tracks(root, summary, result)
     else:
         _check_reconstruction_fields(summary, result)
+
+    # Continue through independent artifact families after errors so one run
+    # reports a useful complete acceptance diagnosis.
     _check_plots(
         root,
         summary,
@@ -188,6 +198,8 @@ def evaluate_run(run_dir: str | Path,
 def _check_reconstruction_fields(summary: dict[str, Any],
                                  result: EvaluationResult) -> None:
     """Validate reconstruction-specific counts and bounded diagnostics."""
+    # Require source identity even though its dataset-specific metadata remains
+    # extensible within a JSON object.
     if _nonnegative_integer(summary.get("event_count")) <= 0:
         result.add_error(
             "reconstruction event_count must be positive"
@@ -204,6 +216,8 @@ def _check_reconstruction_fields(summary: dict[str, Any],
             "dataset_metadata must contain one JSON object"
         )
 
+    # Cross-check complete and retained patch counts so bounded diagnostic
+    # sampling remains explicit rather than silently dropping observations.
     reconstruction_frames = _positive_integer_field(
         summary,
         "reconstruction_frames",
@@ -254,6 +268,8 @@ def _check_reconstruction_fields(summary: dict[str, Any],
             "patch_quality_truncated must be Boolean"
         )
 
+    # The preview accumulation interval is derived from its frame rate and must
+    # not drift between renderer metadata and the summary.
     preview_fps = _finite_positive_number(
         summary.get("preview_fps"),
         "preview_fps",
@@ -278,6 +294,8 @@ def _check_reconstruction_fields(summary: dict[str, Any],
             "preview_dt_ms does not match preview_fps"
         )
 
+    # Keep duplicated convenience counts identical to the typed video artifact
+    # objects consumed by generic video validation.
     for field_name, expected_frames in (
         ("reconstruction", reconstruction_frames),
         ("patch_debug", patch_frames),
@@ -292,6 +310,8 @@ def _check_reconstruction_fields(summary: dict[str, Any],
                 f"{field_name} frame_count does not match summary"
             )
 
+    # Validate the fixed mosaic geometry as a coherent policy rather than three
+    # independent positive integers.
     patch_layout = summary.get("patch_layout")
     if not isinstance(patch_layout, dict):
         result.add_error(
@@ -340,6 +360,8 @@ def _check_summary_fields(summary: dict[str, Any],
                           *,
                           expected_artifact_type: str) -> None:
     """Validate the stable component-summary scalar schema."""
+    # Pin schema identity before checking payload values so readers can reject
+    # future incompatible formats deterministically.
     missing_keys = sorted(REQUIRED_SUMMARY_KEYS - set(summary))
     if missing_keys:
         result.add_error(
@@ -361,6 +383,7 @@ def _check_summary_fields(summary: dict[str, Any],
     if summary.get("status") != "passed":
         result.add_error("summary status must be 'passed'")
 
+    # Reject Boolean values explicitly because Python treats them as integers.
     for field_name in ("event_count", "track_count", "track_rows"):
         value = summary.get(field_name)
         if (
@@ -388,6 +411,8 @@ def _check_tracks(root: Path,
                   summary: dict[str, Any],
                   result: EvaluationResult) -> None:
     """Validate the declared track file and exact summary counts."""
+    # Resolve through the component root before invoking the shared strict
+    # parser so manifest paths cannot redirect validation elsewhere.
     track_path = _resolve_artifact(
         root,
         summary.get("tracks_file", "tracks.txt"),
@@ -408,6 +433,8 @@ def _check_tracks(root: Path,
         result.add_error(f"tracks file has no data rows: {track_path}")
         return
 
+    # Recompute both aggregate counts from the artifact instead of trusting the
+    # duplicated summary values.
     track_count = len({sample.track_id for sample in samples})
     if summary.get("track_rows") != len(samples):
         result.add_error(
@@ -430,6 +457,8 @@ def _check_plots(root: Path,
         result.add_error("plots must be a list of relative paths")
         return
 
+    # Resolve and decode every manifest entry once, indexing by the stable
+    # filename used by the plot-contract schema.
     plot_entries: dict[str, Path] = {}
     for index, entry in enumerate(plot_values):
         path = _resolve_artifact(
@@ -449,6 +478,8 @@ def _check_plots(root: Path,
         _check_png(path, result)
         _check_plot_contract(path.name, summary, result)
 
+    # Derive the mandatory subset from component type and available inputs;
+    # optional extra plots still receive the same decoding and label checks.
     required: set[str] = set()
     if require_tracks:
         required.update(REQUIRED_TRACK_PLOTS)
@@ -489,6 +520,9 @@ def _decode_png_size(path: Path,
     if path.stat().st_size == 0:
         result.add_error(f"empty {artifact_name}: {path}")
         return None
+
+    # Verify compressed structure first, then reopen to read dimensions because
+    # Pillow invalidates an image object after ``verify()``.
     try:
         with Image.open(path) as image:
             image.verify()
@@ -553,6 +587,8 @@ def _check_video_artifact(root: Path,
     if path is None:
         return
 
+    # Bound declared allocation and frame count before opening a potentially
+    # expensive sequence or invoking ffprobe.
     frame_count = _positive_integer_field(
         value,
         "frame_count",
@@ -602,6 +638,8 @@ def _check_video_artifact(root: Path,
             f"{field_name}.fps must be finite and in (0, 1000]"
         )
 
+    # Dispatch only after common schema checks so all backends share identical
+    # dimension, frame-count, and frame-rate semantics.
     if kind == "mp4":
         _check_mp4(
             path,
@@ -699,6 +737,8 @@ def _check_png_sequence(path: Path,
             f"{field_name} contains incomplete staged PNG frames"
         )
 
+    # Bound discovery while collecting only the writer's public frame prefix;
+    # unrelated files are ignored unless they impersonate that prefix.
     all_frame_paths: list[Path] = []
     for frame_path in path.glob("frame_*.png"):
         all_frame_paths.append(frame_path)
@@ -710,6 +750,8 @@ def _check_png_sequence(path: Path,
             return
     all_frame_paths.sort()
 
+    # Separate exact conventional names from frame-like debris before checking
+    # contiguous numbering and image contents.
     frame_paths: list[Path] = []
     invalid_names: list[str] = []
     for frame_path in all_frame_paths:
@@ -733,6 +775,9 @@ def _check_png_sequence(path: Path,
             f"{field_name} frame count {len(frame_paths)} does not match "
             f"declared {frame_count}"
         )
+
+    # Decode every declared frame because one corrupt or mismatched image makes
+    # the complete sequence artifact unusable.
     for index, frame_path in enumerate(frame_paths):
         expected_name = f"frame_{index:06d}.png"
         if frame_path.name != expected_name:
@@ -771,6 +816,8 @@ def _check_mp4(path: Path,
         result.add_error(f"{field_name} is not an MP4 container: {path}")
         return
 
+    # Treat the container signature as the portable minimum; when ffprobe is
+    # available, require decoded stream metadata to match the manifest exactly.
     ffprobe = shutil.which("ffprobe")
     if ffprobe is None:
         result.warnings.append(
@@ -805,6 +852,9 @@ def _check_mp4(path: Path,
             f"ffprobe rejected {field_name}: {completed.stderr.strip()}"
         )
         return
+
+    # Parse only the first video stream selected by ffprobe and convert rational
+    # frame rate to the scalar representation used by the artifact schema.
     try:
         payload = json.loads(completed.stdout)
         streams = payload["streams"]
@@ -864,6 +914,8 @@ def _check_plot_contract(name: str,
         result.add_error(f"missing plot label contract: {name}")
         return
 
+    # Require complete reader-facing text and apply capitalization to the first
+    # alphabetic character, allowing conventional numerical prefixes.
     for field_name in ("title", "subtitle", "x_label", "y_label"):
         value = contract.get(field_name)
         if not isinstance(value, str) or not value.strip():
@@ -885,6 +937,8 @@ def _check_plot_contract(name: str,
                 "with a capital letter"
             )
 
+    # Unit-bearing axes are an acceptance invariant independent of the
+    # renderer that produced the PNG.
     for field_name in ("x_label", "y_label"):
         value = contract.get(field_name)
         if isinstance(value, str) and (
@@ -908,6 +962,8 @@ def _check_ground_truth(root: Path,
         )
         return
 
+    # Detect conventional ground-truth artifacts independently from the
+    # summary so an unavailable claim cannot conceal existing evidence.
     gt_candidates = {
         root / name
         for name in ("gt.txt", "ground_truth.txt")
@@ -928,6 +984,8 @@ def _check_ground_truth(root: Path,
                 "gt_metrics matched_rows must be a positive integer"
             )
         else:
+            # Numeric extension fields are permitted, but every one must remain
+            # finite for portable JSON consumers.
             for key, value in metrics.items():
                 if (
                     isinstance(value, (int, float)) and
@@ -958,6 +1016,8 @@ def _check_processing_timing(root: Path,
     if value.get("status") != "passed":
         result.add_error("processing_timing status must be 'passed'")
 
+    # Validate retained and plotted cardinalities before reading either timing
+    # artifact.
     sample_count = _positive_integer_field(
         value,
         "sample_count",
@@ -979,6 +1039,8 @@ def _check_processing_timing(root: Path,
             "processing_timing plotted_sample_count exceeds sample_count"
         )
 
+    # Keep both timing paths inside the component root and require existing
+    # nonempty regular files before deeper CSV or plot checks.
     resolved_artifacts: dict[str, Path] = {}
     for field_name in ("input_csv", "output_plot"):
         path = _resolve_artifact(
@@ -1026,6 +1088,9 @@ def _check_processing_timing_csv(path: Path,
     try:
         with path.open(newline="", encoding="utf-8") as input_stream:
             reader = csv.DictReader(input_stream)
+
+            # Pin exact column order because downstream tooling consumes this
+            # CSV directly without a schema negotiation step.
             if tuple(reader.fieldnames or ()) != PROCESSING_TIMING_FIELDS:
                 result.add_error(
                     "processing_timing CSV header must be "
@@ -1063,6 +1128,9 @@ def _check_processing_timing_csv(path: Path,
                     overhead_ms,
                     total_ms,
                 ) = values
+
+                # Enforce causal ordering, finite nonnegative components, and
+                # exact additive decomposition for every accepted packet.
                 if (
                     packet_index <= previous_packet_index or
                     event_time_s < previous_event_time_s
@@ -1114,6 +1182,8 @@ def _resolve_artifact(root: Path,
                       field_name: str,
                       result: EvaluationResult) -> Path | None:
     """Resolve one manifest path without permitting absolute or parent escape."""
+    # Reject lexical escape first so platform path normalization cannot hide a
+    # parent traversal from the stable POSIX manifest syntax.
     if not isinstance(value, str) or not value.strip():
         result.add_error(
             f"{field_name} must be a nonempty relative path"
@@ -1126,6 +1196,8 @@ def _resolve_artifact(root: Path,
         )
         return None
 
+    # Recheck containment after joining and resolution to reject escape through
+    # symlinked or otherwise normalized filesystem components.
     path = root.joinpath(*pure_path.parts)
     if path.is_symlink():
         result.add_error(
@@ -1171,6 +1243,8 @@ def evaluate_track_video(summary_path: str | Path) -> EvaluationResult:
     Output:
         False
     """
+    # Treat the summary directory as the standalone component root and reject
+    # link substitution before parsing any referenced artifact.
     path = Path(summary_path)
     result = EvaluationResult(passed=True)
     if path.is_symlink():
@@ -1183,6 +1257,8 @@ def evaluate_track_video(summary_path: str | Path) -> EvaluationResult:
         return result
     root = path.parent.resolve()
 
+    # Parse the manifest completely before validating its schema and referenced
+    # track/video artifacts.
     try:
         value = json.loads(
             path.read_text(encoding="utf-8", errors="strict")
@@ -1197,6 +1273,8 @@ def evaluate_track_video(summary_path: str | Path) -> EvaluationResult:
         return result
     summary: dict[str, Any] = value
 
+    # Validate identity and portable dataset provenance before expensive media
+    # inspection.
     schema_version = summary.get("schema_version")
     if isinstance(schema_version, bool) or schema_version != 1:
         result.add_error("track-video schema_version must equal 1")
@@ -1217,6 +1295,8 @@ def evaluate_track_video(summary_path: str | Path) -> EvaluationResult:
             "track-video dataset_metadata must contain one object"
         )
 
+    # Validate encoded media and strict track rows independently, then compare
+    # their shared policy and cardinality fields.
     _check_video_artifact(
         root,
         summary.get("video"),
@@ -1241,6 +1321,8 @@ def evaluate_track_video(summary_path: str | Path) -> EvaluationResult:
 
     video = summary.get("video")
     if isinstance(video, dict):
+        # Decode the complete track-display policy before evaluating relations
+        # among rate, event window, geometry, and observations.
         track_rows = _positive_integer_field(
             video,
             "track_rows",
@@ -1302,6 +1384,8 @@ def evaluate_track_video(summary_path: str | Path) -> EvaluationResult:
         if scale is not None and scale > 8:
             result.add_error("video.scale must be in [1, 8]")
 
+        # The frame window is derived from fps by the renderer and remains an
+        # exact integer-microsecond artifact invariant.
         fps = video.get("fps")
         if (
             event_window_us is not None and
@@ -1318,6 +1402,8 @@ def evaluate_track_video(summary_path: str | Path) -> EvaluationResult:
                 "video.event_window_us does not match video.fps"
             )
 
+        # Recompute row and feature counts from the strict text artifact rather
+        # than accepting the flattened video metadata at face value.
         if track_rows != len(samples):
             result.add_error(
                 "track-video track_rows does not match the track artifact"
@@ -1387,6 +1473,8 @@ def main(argv: list[str] | None = None) -> int:
         ERROR: run directory is missing: missing
         1
     """
+    # Select exactly one evaluation mode so a standalone video summary cannot
+    # be confused with a complete component run.
     parser = argparse.ArgumentParser(
         description="Validate EKLT example artifacts."
     )
@@ -1417,6 +1505,9 @@ def main(argv: list[str] | None = None) -> int:
             require_tracks=not args.no_require_tracks,
         )
         display_path = args.run_dir
+
+    # Emit every accumulated warning and error before selecting the process
+    # status used by shell orchestration.
     for warning in result.warnings:
         print(f"WARNING: {warning}")
     for error in result.errors:

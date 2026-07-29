@@ -115,6 +115,8 @@ class TrackVideoArtifact:
         Output:
             3
         """
+        # Flatten the nested video contract because the Stage 19 summary schema
+        # treats encoding and track-display policy as one artifact object.
         return {
             **self.video.as_dict(),
             "track_rows": self.track_rows,
@@ -176,6 +178,8 @@ def write_track_dot_video(events: EventArray,
     Output:
         800 800
     """
+    # Validate resource and display policy before sorting observations or
+    # constructing the frame iterator consumed by the encoder.
     if events.size == 0:
         raise ValueError("at least one event is required")
     if not tracks:
@@ -196,6 +200,8 @@ def write_track_dot_video(events: EventArray,
     if not 1 <= dot_radius <= 64:
         raise ValueError("dot_radius must be in [1, 64]")
 
+    # Establish one deterministic global observation order while retaining
+    # stable feature identifiers and the original numerical estimates.
     ordered_tracks = sorted(
         tracks,
         key=lambda sample: (sample.t_s, sample.track_id),
@@ -206,12 +212,17 @@ def write_track_dot_video(events: EventArray,
     event_start_s = float(events.t_start_us) / 1_000_000.0
     event_end_s = float(events.t_end_us) / 1_000_000.0
     hold_s = hold_ms / 1000.0
+
+    # Include the bounded display hold when checking overlap because an update
+    # just before the event interval may still be visible in its first frame.
     if (
         ordered_tracks[-1].t_s < event_start_s - hold_s or
         ordered_tracks[0].t_s > event_end_s
     ):
         raise ValueError("track and event timelines do not overlap")
 
+    # Drive rendering from one lazy frame iterator so memory use depends on the
+    # active-track set and one event slice rather than sequence duration.
     window_us = max(1, int(round(1_000_000.0 / fps)))
     video = write_video_or_png_sequence(
         _iter_track_frames(
@@ -252,6 +263,8 @@ def _iter_track_frames(events: EventArray,
     active_tracks: dict[int, TrackSample] = {}
     track_index = 0
 
+    # Advance one fixed event-time window at a time. The dictionary retains at
+    # most the latest observation for each currently visible feature.
     for frame_start_us in range(start_us, end_us, window_us):
         frame_end_us = min(frame_start_us + window_us, end_us)
         frame_end_s = frame_end_us / 1_000_000.0
@@ -265,12 +278,17 @@ def _iter_track_frames(events: EventArray,
             sample = tracks[track_index]
             active_tracks[sample.track_id] = sample
             track_index += 1
+
+        # Expire stale observations immediately so the renderer's retained
+        # state stays bounded by the configured hold interval.
         active_tracks = {
             track_id: sample
             for track_id, sample in active_tracks.items()
             if frame_end_s - sample.t_s <= hold_s
         }
 
+        # Render only events assigned to the current causal interval, including
+        # the final source timestamp exactly once in the last frame.
         chunk = slice_by_time(
             events,
             start_us=frame_start_us,
@@ -293,6 +311,8 @@ def _render_track_frame(base: np.ndarray,
                         dot_radius: int,
                         frame_time_s: float) -> np.ndarray:
     """Enlarge one event frame and overlay its current track positions."""
+    # Nearest-neighbor enlargement keeps every source event pixel aligned with
+    # the integer scale used for track centers.
     nearest = getattr(getattr(Image, "Resampling", Image), "NEAREST")
     source_height, source_width = base.shape[:2]
     image = Image.fromarray(base).resize(
@@ -325,6 +345,8 @@ def _render_track_frame(base: np.ndarray,
             width=1,
         )
 
+    # Draw frame time and retained-track count on an opaque badge so diagnostic
+    # text remains readable over dense event activity.
     label = f"t={frame_time_s:.3f}s  active tracks={len(active_tracks)}"
     label_bounds = draw.textbbox((0, 0), label)
     label_width = label_bounds[2] - label_bounds[0]
@@ -345,6 +367,9 @@ def _validate_track_samples(tracks: Sequence[TrackSample],
     maximum_x = float(width - 1)
     maximum_y = float(height - 1)
     boundary_clipped_track_rows = 0
+
+    # Validate the globally sorted stream and count display-only clips without
+    # altering the native subpixel observations.
     for sample in tracks:
         if sample.track_id < 0:
             raise ValueError("track ids must be nonnegative")
@@ -366,6 +391,8 @@ def _validate_track_samples(tracks: Sequence[TrackSample],
 
 def _track_color(track_id: int) -> tuple[int, int, int]:
     """Return the native feature renderer's deterministic color in RGB order."""
+    # Mirror the native multiplicative hash so one feature keeps the same
+    # visual identity across C++ still images and Python videos.
     hash_value = (
         track_id * 2_654_435_761 + 2_246_822_519
     ) & 0xFFFFFFFF

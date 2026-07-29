@@ -19,6 +19,7 @@ patch_max_candidates="8"
 max_patch_quality_samples="50000"
 python_bin="${PYTHON:-python3.12}"
 
+# Define the CLI contract and failure path without touching selected paths.
 usage() {
     cat <<'USAGE'
 Usage: scripts/run_elope_reconstruction_example_demo.sh [options]
@@ -47,6 +48,7 @@ die() {
     exit 2
 }
 
+# Parse policy without touching the caller-selected source or output paths.
 while (($# > 0)); do
     case "$1" in
         --input)
@@ -114,6 +116,8 @@ while (($# > 0)); do
     esac
 done
 
+# Validate source, paired geometry, interpreter, and cleanup root before
+# constructing the Python example command.
 [[ -n "${input}" ]] || die "--input is required."
 [[ -f "${input}" ]] || die "ELOPE input not found: ${input}"
 if [[ -n "${width}" || -n "${height}" ]]; then
@@ -133,6 +137,8 @@ case "${repo_root}" in
         ;;
 esac
 
+# Build one argument vector so optional paired geometry is forwarded atomically
+# and shell word splitting cannot alter caller values.
 arguments=(
     --input "$(realpath "${input}")"
     --output-dir "${output_dir}"
@@ -148,6 +154,8 @@ if [[ -n "${width}" ]]; then
     arguments+=(--width "${width}" --height "${height}")
 fi
 
+# Run the installed-style module with only the repository Python source added;
+# bytecode generation is disabled so the demo does not dirty the checkout.
 PYTHONDONTWRITEBYTECODE=1 \
 PYTHONPATH="${repo_root}/python${PYTHONPATH:+:${PYTHONPATH}}" \
 "${python_bin}" \

@@ -458,6 +458,22 @@ Each functional stage is exactly one mandatory user-commit boundary:
 - [x] Stop for the user commit titled
       `Add the single-sequence ELOPE analysis pipeline`.
 
+## Stage 19A - Single-sequence runtime readability follow-up
+
+- [x] Add purpose-, invariant-, and contract-oriented comments to the Stage 19
+      Python runtime modules and shell entrypoints without narrating routine
+      statements.
+- [x] Document trust boundaries, bounded-memory iteration, causal ordering,
+      cleanup ownership, atomic publication, geometry provenance, and artifact
+      cross-checks at their implementation sites.
+- [x] Keep Python ASTs and shell executable content identical to accepted
+      Stage 19 commit `945eb44ba77d94674dcd3467e6a0777a9ef69f41`.
+- [x] Validate the isolated exact-index source suite, Python documentation and
+      static checks, Bash syntax, ShellCheck, staged-byte parity, and
+      `git diff --cached --check`.
+- [x] Stop for the user commit titled
+      `Document ELOPE pipeline runtime invariants`.
+
 ## Stage 20 - Repository metadata and hygiene
 
 - [ ] Review issue and pull-request templates, attributes, ignore rules,
@@ -536,6 +552,7 @@ Each handoff stage remains one user commit:
 | 16 - Portable Python package | accepted | Exact-index shared/static Werror 50/50; wrapper pytest; CMake installs and consumers; shared/static exact-artifact wheels; unrelated-library exclusion; `$ORIGIN`; relocated imports with empty `LD_LIBRARY_PATH`; Doxygen, source-package, structured-file, shell, and staged-byte gates passed | `af0d766706ce1366010b4d943b72d3d42ee86fb6` |
 | 17 - MATLAB R2024b wrapper | accepted | Exact-index shared/static Werror 52/52; four R2024b MEX regressions; exact-artifact toolbox installs; `$ORIGIN`; relocated shared/static execution with empty `LD_LIBRARY_PATH`; simultaneous Python generation; installed C++ consumers; MATLAB checkcode, Doxygen, source-package, and staged-byte gates passed | `19bc27a87788fc2f7334259ccb59824ad18fcefe` |
 | 18 - Unified Python distribution and `event_vision_utils` foundation | accepted | Exact-index shared Python-plus-MATLAB Werror 54/54 and static Python Werror 50/50 passed with CMake installs and installed consumers. Simplified shared/static exact-artifact wheels passed relocated suites with 94 tests and one expected skip; the pure wheel and sdist passed the source-only suite with 89 tests and six native-optional skips. Doxygen, root source packaging, official ELOPE loading, structured-file, documentation/type/layout, and staged-byte gates passed | `000c5aaf62bcbec7be166102b8b1f45d2167caf1` |
-| 19 - Single-sequence ELOPE analysis pipeline | awaiting user commit | Exact-index shared/static Werror 50/50, installed consumers, Doxygen, CMake installs, relocated shared/static/pure packages, 166 source tests, and Jazzy colcon with ten tests passed. The full 386,785-event ELOPE run produced 2,434 EventPackets, 9,060 track rows across 66 IDs, 99.9918% duration coverage, 697 additive timing samples, validated labeled plots, and exact 4,879-frame event/track videos in 54.49 s at 244,624 KiB peak RSS with no swap | `pending` |
-| 20 - Repository metadata and hygiene | pending | Not run; requires accepted Stage 19 checkpoint | - |
+| 19 - Single-sequence ELOPE analysis pipeline | accepted | Exact-index shared/static Werror 50/50, installed consumers, Doxygen, CMake installs, relocated shared/static/pure packages, 166 source tests, and Jazzy colcon with ten tests passed. The full 386,785-event ELOPE run produced 2,434 EventPackets, 9,060 track rows across 66 IDs, 99.9918% duration coverage, 697 additive timing samples, validated labeled plots, and exact 4,879-frame event/track videos in 54.49 s at 244,624 KiB peak RSS with no swap | `945eb44ba77d94674dcd3467e6a0777a9ef69f41` |
+| 19A - Single-sequence runtime readability | awaiting user commit | Comment-only Python AST and shell executable-content parity against accepted Stage 19 passed. The isolated exact-index source suite reports 166 passed and seven native-optional skips; Python documentation/static checks, Bash, ShellCheck, staged-byte, and diff gates pass | `pending` |
+| 20 - Repository metadata and hygiene | pending | Not run; requires accepted Stage 19A follow-up | - |
 | 21 - Final cumulative review | pending | Not run; requires accepted Stage 20 checkpoint | - |

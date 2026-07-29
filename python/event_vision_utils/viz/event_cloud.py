@@ -92,6 +92,8 @@ def render_event_stream_3d_views(events: EventArray,
     Output:
         event_stream_3d_views.png
     """
+    # Validate both publication paths before allocating the comparatively
+    # large six-view Matplotlib canvas.
     output = Path(output_path)
     if output.is_symlink():
         raise ValueError(
@@ -133,6 +135,8 @@ def _build_event_stream_3d_figure(events: EventArray,
             "max_points must be in [1, 1000000]"
         )
 
+    # Materialize only the bounded voxel sample used by all six projections;
+    # the complete event stream remains outside the figure state.
     selected = _uniform_spatiotemporal_indices(events, max_points=max_points)
     x_coordinates = events.x[selected]
     y_coordinates = events.y[selected]
@@ -143,6 +147,8 @@ def _build_event_stream_3d_figure(events: EventArray,
     positive_mask = events.p[selected] > 0
     duration_s = max(events.duration_us / 1_000_000.0, 1e-9)
 
+    # Fix the view order and the hidden line-of-sight axis so every subplot has
+    # a stable reader-facing orientation and comparable sensor/time limits.
     views = (
         ("View along +t Axis", 90.0, -90.0, "t"),
         ("View along −t Axis", -90.0, -90.0, "t"),
@@ -153,6 +159,9 @@ def _build_event_stream_3d_figure(events: EventArray,
     )
     figure = plt.figure(figsize=(15.0, 9.0))
     figure.patch.set_facecolor("#F7F8FA")
+
+    # Encode polarity redundantly through color and marker shape so the views
+    # remain interpretable when printed or viewed with impaired color vision.
     for index, (title, elevation, azimuth, hidden_axis) in enumerate(
         views, start=1
     ):
@@ -215,6 +224,8 @@ def _build_event_stream_3d_figure(events: EventArray,
             fontweight="bold",
         )
 
+    # Reserve figure-level space for the shared title, sample provenance, and
+    # legend instead of duplicating that metadata inside each projection.
     figure.suptitle(
         EVENT_CLOUD_TITLE,
         fontsize=18,
@@ -277,6 +288,8 @@ def _uniform_spatiotemporal_indices(events: EventArray,
     if events.size <= max_points:
         return np.arange(events.size, dtype=np.int64)
 
+    # Use equal-resolution bins on x, y, and time so dense spatial regions or
+    # bursts cannot consume the complete display budget by themselves.
     bins_per_axis = max(1, int(np.ceil(max_points ** (1.0 / 3.0))))
     x_bins = np.minimum(
         events.x.astype(np.int64) * bins_per_axis // max(events.width, 1),
@@ -301,6 +314,9 @@ def _uniform_spatiotemporal_indices(events: EventArray,
         bins_per_axis - 1,
     )
 
+    # Keep the first causal event in each voxel, then preserve causal order in
+    # the selected result. Uniform thinning is applied only if occupied voxels
+    # still exceed the hard display bound.
     linear_bins = (
         (time_bins * bins_per_axis + y_bins) * bins_per_axis + x_bins
     )

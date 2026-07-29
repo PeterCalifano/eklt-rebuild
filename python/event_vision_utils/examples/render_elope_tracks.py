@@ -42,6 +42,8 @@ def main(argv: list[str] | None = None) -> int:
         output/track_video_summary.json
         0
     """
+    # Collect the rendering and artifact policy in one CLI contract before any
+    # dataset is loaded or output path is touched.
     parser = argparse.ArgumentParser(
         description="Render EKLT tracks as dots over ELOPE event activity."
     )
@@ -57,6 +59,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--dot-radius", default=5, type=int)
     args = parser.parse_args(argv)
 
+    # Keep the default summary beside the requested video and reject link-based
+    # substitution at every caller-controlled artifact boundary.
     summary_path = args.summary_output
     if summary_path is None:
         summary_path = args.output.parent / "track_video_summary.json"
@@ -87,6 +91,8 @@ def main(argv: list[str] | None = None) -> int:
             "their summary directory"
         ) from exc
 
+    # Load both inputs through their strict shared adapters before starting the
+    # incremental renderer or its external encoder.
     dataset = load_event_dataset(
         args.input,
         adapter="elope",
@@ -114,6 +120,8 @@ def main(argv: list[str] | None = None) -> int:
             "published track video escaped its summary directory"
         ) from exc
 
+    # Publish only component-relative artifact paths so the complete tracking
+    # directory can be relocated without rewriting its summary.
     summary_path.parent.mkdir(parents=True, exist_ok=True)
     video_metadata = video.as_dict()
     video_metadata["path"] = relative_video_path.as_posix()
@@ -127,6 +135,9 @@ def main(argv: list[str] | None = None) -> int:
         "dataset_metadata": dataset.metadata.attributes,
         "video": video_metadata,
     }
+
+    # Replace the summary only after a complete deterministic JSON document has
+    # been written to its owned sibling.
     temporary_path = summary_path.with_suffix(".tmp.json")
     if temporary_path.is_symlink():
         raise ValueError(

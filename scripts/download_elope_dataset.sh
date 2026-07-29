@@ -14,6 +14,7 @@ first_only=false
 force=false
 python_bin="${PYTHON:-python3.12}"
 
+# Define the CLI contract and failure path without touching selected paths.
 usage() {
     cat <<'USAGE'
 Usage: scripts/download_elope_dataset.sh [options]
@@ -34,6 +35,8 @@ die() {
     exit 2
 }
 
+# Parse options side-effect free; validation below establishes the exact
+# download and extraction ownership boundary.
 while (($# > 0)); do
     case "$1" in
         --output-dir)
@@ -73,11 +76,14 @@ while (($# > 0)); do
     esac
 done
 
+# Resolve required local tools before creating or removing any selected path.
 command -v "${python_bin}" >/dev/null 2>&1 ||
     die "Python interpreter not found: ${python_bin}"
 command -v realpath >/dev/null 2>&1 ||
     die "realpath is required."
 
+# Reject broad or linked output roots because archive replacement and
+# extraction are confined below this directory.
 [[ ! -L "${output_dir}" ]] ||
     die "output directory must not be a symlink: ${output_dir}"
 output_dir="$(realpath -m "${output_dir}")"
@@ -90,6 +96,8 @@ case "${repo_root}" in
 esac
 mkdir -p "${output_dir}"
 
+# Canonicalize the archive inside the validated root and preflight both its
+# public and resumable-partial paths.
 if [[ -z "${zip_path}" ]]; then
     zip_path="${output_dir}/elope_dataset.zip"
 elif [[ "${zip_path}" != /* ]]; then
@@ -121,6 +129,8 @@ if [[ "${force}" == true ]]; then
     rm -f -- "${zip_path}" "${partial_path}"
 fi
 
+# Reuse a complete owned archive; otherwise resume into the partial sibling and
+# publish it only after curl succeeds.
 if [[ -f "${zip_path}" ]]; then
     echo "archive exists: ${zip_path}"
 else
@@ -141,6 +151,8 @@ if [[ "${extract}" == false ]]; then
     exit 0
 fi
 
+# Delegate archive-member and NPZ validation to Python while retaining the same
+# already validated output root.
 PYTHONDONTWRITEBYTECODE=1 \
 PYTHONPATH="${repo_root}/python${PYTHONPATH:+:${PYTHONPATH}}" \
 "${python_bin}" - "${zip_path}" "${output_dir}" "${first_only}" <<'PY'
@@ -160,6 +172,8 @@ output_dir = Path(sys.argv[2]).resolve()
 first_only = sys.argv[3].lower() == "true"
 
 with zipfile.ZipFile(archive_path) as archive:
+    # Select only sorted regular NPZ members so ``--first-only`` is
+    # deterministic and directory entries never become extraction targets.
     members = sorted(
         (
             info
@@ -178,6 +192,8 @@ with zipfile.ZipFile(archive_path) as archive:
     selected_targets: set[Path] = set()
 
     for member in selected:
+        # Reject lexical traversal and Windows separators before joining the
+        # archive member to the POSIX output root.
         member_path = PurePosixPath(member.filename)
         if (
             member_path.is_absolute()
@@ -188,6 +204,8 @@ with zipfile.ZipFile(archive_path) as archive:
                 f"unsafe ELOPE archive member: {member.filename}"
             )
 
+        # Walk every existing parent without following symlinks, then recheck
+        # containment after filesystem normalization.
         target_path = output_dir.joinpath(*member_path.parts)
         parent_path = output_dir
         for part in member_path.parts[:-1]:
@@ -217,6 +235,9 @@ with zipfile.ZipFile(archive_path) as archive:
             raise SystemExit(
                 f"ELOPE target is not a regular file: {target_path}"
             )
+
+        # Prevent archive aliases from replacing the same normalized target
+        # twice under different member spellings.
         if resolved_target in selected_targets:
             raise SystemExit(
                 f"duplicate ELOPE archive target: {member.filename}"
@@ -250,6 +271,8 @@ with zipfile.ZipFile(archive_path) as archive:
         validate_elope_npz(target_path)
         extracted_paths.append(target_path)
 
+# Emit a stable machine-readable first path for the pipeline wrapper while
+# retaining a human-readable extraction count.
 first_sequence = extracted_paths[0]
 print(f"validated_first_sequence={first_sequence}")
 print(f"extracted_sequences={len(extracted_paths)}")

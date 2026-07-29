@@ -51,6 +51,8 @@ class PlotContract:
 
     def __post_init__(self) -> None:
         """Reject incomplete, lowercase, or unitless reader-facing labels."""
+        # Validate at construction so renderers and artifact evaluators share
+        # one immutable label contract instead of repairing metadata later.
         _validate_capitalized_text(self.title, "title")
         _validate_capitalized_text(self.subtitle, "subtitle")
         _validate_axis_label(self.x_label, "horizontal")
@@ -74,6 +76,8 @@ class PlotContract:
         Output:
             Time [s]
         """
+        # Keep these keys aligned with the stable summary schema consumed by
+        # the standalone output evaluator.
         return {
             "title": self.title,
             "subtitle": self.subtitle,
@@ -84,6 +88,8 @@ class PlotContract:
 
 def _validate_axis_label(label: str, axis_name: str) -> None:
     """Require a capitalized quantity followed by a bracketed unit or scale."""
+    # Axis text must remain independently interpretable in saved figures, so a
+    # visible unit or explicit dimensionless scale is mandatory.
     _validate_capitalized_text(label, f"{axis_name} axis label")
     if "[" not in label or not label.endswith("]"):
         raise ValueError(
@@ -97,6 +103,8 @@ def _validate_capitalized_text(text: str, field_name: str) -> None:
     if not normalized:
         raise ValueError(f"{field_name} must not be empty")
 
+    # Ignore leading punctuation and numerals when applying the reader-facing
+    # capitalization rule.
     first_letter = next(
         (character for character in normalized if character.isalpha()),
         None,

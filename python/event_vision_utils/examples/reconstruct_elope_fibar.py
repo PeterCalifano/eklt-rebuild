@@ -103,6 +103,8 @@ class _PatchQualityAccumulator:
 
     def add(self, samples: list[_PatchQualitySample]) -> None:
         """Count one patch batch and retain only the configured prefix."""
+        # Count the complete stream while retaining a deterministic bounded
+        # prefix suitable for the analytical plot.
         self.inspected_count += len(samples)
         remaining = max(0, self.max_samples - len(self.samples))
         self.samples.extend(samples[:remaining])
@@ -130,6 +132,8 @@ def main(argv: list[str] | None = None) -> int:
     Output:
         0
     """
+    # Parse all rendering and retention policy through the CLI before loading
+    # the potentially large immutable event sequence.
     parser = argparse.ArgumentParser(
         description="Run ELOPE FIBAR reconstruction example demo."
     )
@@ -149,6 +153,9 @@ def main(argv: list[str] | None = None) -> int:
         type=int,
     )
     args = parser.parse_args(argv)
+
+    # Bound time, canvas, candidate, and retained-sample policy before any
+    # output cleanup or external encoder process can begin.
     if not math.isfinite(args.dt_ms) or not 1.0 <= args.dt_ms <= 1_000_000.0:
         raise ValueError("--dt-ms must be finite and in [1, 1000000]")
     if (
@@ -183,6 +190,9 @@ def main(argv: list[str] | None = None) -> int:
         width=args.width,
         height=args.height,
     )
+
+    # Establish the owned artifact root only after the source has passed its
+    # complete adapter validation.
     started = time.perf_counter()
     output_dir = _prepare_output_directory(args.output_dir)
     plots_dir = output_dir / "plots"
@@ -190,6 +200,9 @@ def main(argv: list[str] | None = None) -> int:
 
     events = dataset.events
     preview_dt_ms = 1000.0 / args.event_preview_fps
+
+    # Generate transport-independent event diagnostics before consulting the
+    # optional native wrapper so blocked runs still explain their input.
     event_preview = write_event_preview(
         events,
         output_dir / "events_preview.mp4",
@@ -213,6 +226,8 @@ def main(argv: list[str] | None = None) -> int:
         source="official ELOPE event array",
     )
 
+    # Start from a complete blocked-state schema. Native success fills in the
+    # reconstruction-specific artifacts without changing shared field types.
     summary = {
         "schema_version": 1,
         "artifact_type": "elope_fibar_reconstruction",
@@ -245,6 +260,8 @@ def main(argv: list[str] | None = None) -> int:
         "blocker": "",
     }
 
+    # Publish the portable diagnostics and an explicit blocker when the native
+    # wrapper is absent rather than failing with an import-specific traceback.
     if not fibar_native_available():
         summary["blocker"] = (
             "the eklt_rebuild native wrapper is not built"
@@ -253,6 +270,8 @@ def main(argv: list[str] | None = None) -> int:
         _write_summary(output_dir, summary)
         return 2
 
+    # Derive one native reconstruction policy from validated geometry and keep
+    # patch-quality retention independent from the full inspected count.
     patch_quality = _PatchQualityAccumulator(
         max_samples=args.max_patch_quality_samples,
     )
@@ -288,6 +307,8 @@ def main(argv: list[str] | None = None) -> int:
         inspected_count=patch_quality.inspected_count,
     )
 
+    # Complete the same summary object only after both independent event passes
+    # and their bounded diagnostic artifacts have succeeded.
     summary["status"] = "passed"
     summary["blocker"] = ""
     summary["reconstruction"] = _relative_video_artifact(
@@ -323,9 +344,14 @@ def _iter_reconstruction_frames(events: EventArray,
                                 *,
                                 window_us: int) -> Iterator[np.ndarray]:
     """Yield finite-normalized FIBAR frames from one bounded event pass."""
+    # Own one reconstructor for the iterator lifetime so causal filter state is
+    # preserved while only the current output image is exposed.
     reconstructor = CFibarReconstructor(
         SFibarConfig(width=events.width, height=events.height)
     )
+
+    # Submit each non-overlapping time slice atomically and request the image at
+    # that slice's final accepted timestamp.
     for chunk in iter_time_slices(events, window_us=window_us):
         reconstructor.accept_events(chunk.x, chunk.y, chunk.p, chunk.t_us)
         yield _normalize_float_image(
@@ -342,9 +368,14 @@ def _iter_patch_debug_frames(events: EventArray,
                              mosaic_columns: int,
                              quality_accumulator: _PatchQualityAccumulator) -> Iterator[np.ndarray]:
     """Yield patch mosaics from a fresh bounded FIBAR event pass."""
+    # Use a fresh reconstructor because the immutable source is deliberately
+    # replayed instead of retaining images from the scalar-video pass.
     reconstructor = CFibarReconstructor(
         SFibarConfig(width=events.width, height=events.height)
     )
+
+    # Accumulate only bounded scalar quality records while yielding each large
+    # mosaic directly to the encoder.
     for chunk in iter_time_slices(events, window_us=window_us):
         reconstructor.accept_events(chunk.x, chunk.y, chunk.p, chunk.t_us)
         frame, frame_qualities = _make_patch_debug_frame(
@@ -370,6 +401,8 @@ def _normalize_float_image(image: object) -> np.ndarray:
     if not bool(np.all(np.isfinite(array))):
         raise ValueError("reconstructed image values must be finite")
 
+    # Promote the subtraction to float64 so finite float32 extrema cannot
+    # overflow while determining the display span.
     min_value = float(array.min())
     max_value = float(array.max())
     span = max(max_value - min_value, 1e-6)
@@ -388,11 +421,16 @@ def _make_patch_debug_frame(reconstructor: CFibarReconstructor,
                             panel_size: int = 800,
                             mosaic_columns: int = 2) -> _PatchDebugResult:
     """Render one enlarged event panel and its bounded local-patch mosaic."""
+    # Rank candidates from the current event slice only; the native
+    # reconstructor supplies the causal image and patch contents.
     base = render_polarity_rgb(chunk)
     counts = accumulate_event_counts(chunk)
     candidates = _top_candidates(counts, limit=max_candidates, radius=radius)
     qualities: list[_PatchQualitySample] = []
     patch_tiles: list[_PatchDebugTile] = []
+
+    # Request and classify only the bounded deterministic candidate set, while
+    # preserving every inspected quality record for the accumulator.
     for x, y in candidates:
         patch = reconstructor.request_patch(x, y, radius, t_us)
         valid_fraction = patch.valid_fraction
@@ -435,6 +473,9 @@ def _top_candidates(counts: np.ndarray,
     """Select the strongest in-bounds event-count pixels deterministically."""
     if counts.size == 0:
         return []
+
+    # Sort the flattened count image once so strongest activity is considered
+    # first and zero-activity pixels terminate the scan.
     flat = np.argsort(counts.reshape(-1))[::-1]
     candidates: list[tuple[int, int]] = []
     height, width = counts.shape
@@ -442,6 +483,9 @@ def _top_candidates(counts: np.ndarray,
         if counts.reshape(-1)[index] <= 0:
             break
         y, x = divmod(int(index), width)
+
+        # Exclude boundary candidates before calling the native patch API so
+        # every returned tile has the requested complete square support.
         if (
             x - radius < 0
             or y - radius < 0
@@ -506,6 +550,8 @@ def _compose_patch_debug_frame(base: np.ndarray,
         mosaic_columns=mosaic_columns,
     )
 
+    # Match the event panel height to the patch grid and keep nearest-neighbor
+    # pixels so both event and reconstructed-patch structure stay discrete.
     nearest = getattr(getattr(Image, "Resampling", Image), "NEAREST")
     base_image = Image.fromarray(base).resize(
         (frame_height, frame_height),
@@ -521,6 +567,8 @@ def _compose_patch_debug_frame(base: np.ndarray,
     draw.rectangle((0, 0, 178, 19), fill=(245, 245, 245))
     draw.text((5, 4), "event activity + candidates", fill=(20, 20, 20))
 
+    # Draw every configured slot, including explicit empty slots, so frame
+    # geometry and tile positions remain stable across time.
     for index in range(max_tiles):
         row = index // mosaic_columns
         column = index % mosaic_columns
@@ -609,6 +657,8 @@ def _write_patch_quality_plot(qualities: list[_PatchQualitySample],
                               *,
                               inspected_count: int | None = None) -> Path:
     """Write a labeled gradient-energy trend for every inspected patch."""
+    # Preserve the distinction between all inspected candidates and the
+    # bounded prefix retained for rendering.
     if inspected_count is None:
         inspected_count = len(qualities)
     if inspected_count < len(qualities):
@@ -619,6 +669,9 @@ def _write_patch_quality_plot(qualities: list[_PatchQualitySample],
         raise ValueError(
             f"refusing symlinked patch-quality output: {output_path}"
         )
+
+    # Build the complete reader-facing chart contract before inspecting the
+    # retained numerical values.
     output_path.parent.mkdir(parents=True, exist_ok=True)
     figure, axis = plt.subplots(
         figsize=(9.0, 4.8),
@@ -648,6 +701,9 @@ def _write_patch_quality_plot(qualities: list[_PatchQualitySample],
         [sample.gradient_energy for sample in qualities],
         dtype=np.float64,
     )
+
+    # Render retained quality in inspection order and expose truncation through
+    # the badge rather than extrapolating unretained values.
     if values.size:
         if not bool(np.all(np.isfinite(values))) or bool(
             np.any(values < 0.0)
@@ -699,6 +755,8 @@ def _write_patch_quality_plot(qualities: list[_PatchQualitySample],
             color="#555555",
         )
 
+    # Publish through one owned sibling so interrupted rendering cannot replace
+    # a previously valid diagnostic with a partial PNG.
     temporary_path = output_path.with_name(
         f".{output_path.stem}.tmp{output_path.suffix}"
     )
@@ -718,6 +776,8 @@ def _write_patch_quality_plot(qualities: list[_PatchQualitySample],
 
 def _prepare_output_directory(output_path: Path) -> Path:
     """Validate one output root and remove only known reconstruction artifacts."""
+    # Reject roots that could turn the fixed cleanup list into repository- or
+    # filesystem-wide destruction.
     if output_path.is_symlink():
         raise ValueError(
             f"refusing symlinked output directory: {output_path}"
@@ -771,6 +831,8 @@ def _prepare_output_directory(output_path: Path) -> Path:
 def _resolve_owned_artifact(output_dir: Path,
                             relative_path: Path) -> Path:
     """Validate and return one explicitly named cleanup artifact."""
+    # Walk existing parents without following symlinks before validating the
+    # final file or directory named by the ownership manifest.
     parent_path = output_dir
     for part in relative_path.parts[:-1]:
         parent_path /= part
@@ -800,6 +862,8 @@ def _resolve_owned_artifact(output_dir: Path,
 def _relative_video_artifact(artifact: VideoArtifact,
                              output_dir: Path) -> dict[str, str | int | float | None]:
     """Return video metadata with a path relative to the component root."""
+    # Re-resolve the writer's published path before serializing it so an
+    # encoder fallback cannot escape the relocatable component root.
     artifact_path = Path(artifact.path).resolve(strict=False)
     try:
         relative_path = artifact_path.relative_to(output_dir)
@@ -815,6 +879,8 @@ def _relative_video_artifact(artifact: VideoArtifact,
 
 def _write_summary(output_dir: Path, summary: dict[str, Any]) -> None:
     """Atomically write the example summary with stable ordering."""
+    # Validate both the public target and its exact temporary sibling before
+    # writing any JSON bytes.
     summary_path = output_dir / "summary.json"
     if summary_path.is_symlink():
         raise ValueError(
