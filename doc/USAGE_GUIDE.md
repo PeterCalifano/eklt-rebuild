@@ -69,7 +69,7 @@ From the repo root:
 python3 -m pip install -e python
 ```
 
-This installs the two stage-2 entrypoints:
+This installs the three stage-2 entrypoints:
 
 - `eklt-sequence-source`
 - `eklt-ros1-relay`
@@ -77,7 +77,9 @@ This installs the two stage-2 entrypoints:
 
 ### 2. Create a bridge config
 
-Start from [stage2_sequence_bridge.json](/media/peterc/SCRATCH_PRO/devDir/event-based-repos/rpg_eklt/doc/examples/stage2_sequence_bridge.json) and point `sequence.frames_dir` to your rendered frames.
+Start from
+[stage2_sequence_bridge.json](examples/stage2_sequence_bridge.json) and point
+`sequence.frames_dir` to your rendered frames.
 
 Minimal example:
 
@@ -127,7 +129,7 @@ roscore
 Second ROS1 terminal:
 
 ```bash
-source /opt/ros/noetic/setup.bash
+source "$HOME/eklt_catkin_ws/devel/setup.bash"
 roslaunch eklt_rebuild eklt.launch tracks_file_txt:=/tmp/eklt_tracks.txt v:=1
 ```
 
@@ -136,22 +138,22 @@ roslaunch eklt_rebuild eklt.launch tracks_file_txt:=/tmp/eklt_tracks.txt v:=1
 ROS1 + ROS2 bridge terminal:
 
 ```bash
-source /opt/ros/noetic/setup.bash
-source /opt/ros/foxy/setup.bash
+source "$HOME/eklt_catkin_ws/devel/setup.bash"
+source /opt/ros/jazzy/setup.bash
 ros2 run ros1_bridge dynamic_bridge --bridge-all-topics
 ```
 
 ROS1 relay terminal:
 
 ```bash
-source /opt/ros/noetic/setup.bash
+source "$HOME/eklt_catkin_ws/devel/setup.bash"
 eklt-ros1-relay --config doc/examples/stage2_sequence_bridge.json
 ```
 
 ROS2 source terminal:
 
 ```bash
-source /opt/ros/foxy/setup.bash
+source /opt/ros/jazzy/setup.bash
 eklt-sequence-source --config doc/examples/stage2_sequence_bridge.json
 ```
 
@@ -209,8 +211,9 @@ python3 -m pip install -e python
 eklt-run-rosbag-bridge-demo \
   --bag data/eklt_example/boxes_6dof.bag \
   --tracks-file /tmp/eklt_example/tracks.txt \
-  --ros1-setup /opt/ros/noetic/setup.bash \
-  --ros2-setup /opt/ros/foxy/setup.bash
+  --ros1-setup "$HOME/eklt_catkin_ws/devel/setup.bash" \
+  --ros2-setup /opt/ros/jazzy/setup.bash \
+  --mode frame-backed
 ```
 
 The runner starts:
@@ -225,6 +228,9 @@ Use dry-run mode to inspect exact commands:
 ```bash
 eklt-run-rosbag-bridge-demo --dry-run
 ```
+
+Use `--mode event-only` to launch the alternative FIBAR-backed initialization
+path with `event_only_mode:=true` and `bootstrap:=events`.
 
 ## Visualization And Track Storage
 

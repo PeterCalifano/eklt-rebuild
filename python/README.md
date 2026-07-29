@@ -75,3 +75,22 @@ Expected output:
 `eklt_bridge.primitives.EventStream` representation. New event-processing code
 uses `EventArray` directly instead of maintaining two public data models at one
 API boundary.
+
+## ROS bag bridge demo
+
+The installed bridge runner starts one ROS1 bag replay, exposes ROS1 topics
+through `ros1_bridge`, and shuts down every process it owns. Pass the built
+catkin overlay rather than the ROS1 underlay so `eklt_rebuild` is discoverable:
+
+```bash
+eklt-run-rosbag-bridge-demo \
+  --bag data/eklt_example/boxes_6dof.bag \
+  --tracks-file /tmp/eklt_example/tracks.txt \
+  --ros1-setup "$HOME/eklt_catkin_ws/devel/setup.bash" \
+  --ros2-setup /opt/ros/jazzy/setup.bash \
+  --mode frame-backed
+```
+
+Select the alternative event-only initialization with `--mode event-only`.
+Use `--dry-run` to validate input paths and inspect all generated commands
+without starting ROS processes.
