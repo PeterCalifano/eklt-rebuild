@@ -7,7 +7,7 @@ on:
       - master
     paths:
       - "README.md"
-      - "include/**"
+      - "lib/fibar_lib"
       - "ros1/**"
       - "src/**"
       - "doc/**"
@@ -19,7 +19,7 @@ on:
       - master
     paths:
       - "README.md"
-      - "include/**"
+      - "lib/fibar_lib"
       - "ros1/**"
       - "src/**"
       - "doc/**"

@@ -220,9 +220,9 @@ Acceptance evidence is recorded in
       helper blobs recorded there.
 - [x] Replace the dirty broad Python native-library scan with explicit
       target-derived runtime packaging only in Stage 16.
-- [ ] Refresh historical acceptance text that names separate
-      `libevent_recon_fibar_core` and `libevent_recon_fibar_adapters` artifacts
-      in Stage 20; those names are superseded by the one-library decision.
+- [x] Keep superseded separate-library names only in prominently marked
+      historical records; active guidance uses the accepted one-library
+      `libeklt-rebuild` topology.
 - [x] Review the legacy ROS1 reconstruction/tracking algorithm changes in the
       dedicated Stage 13 source batch without mixing them into Stage 11.
 
@@ -493,23 +493,26 @@ Each functional stage is exactly one mandatory user-commit boundary:
 - [x] Review for unnecessary complexity while preserving functionality,
       documentation, development guidance, and readable implementation.
 - [x] Stop for the user commit titled
-      `Refresh EKLT repository metadata and guidance`.
+      `Refresh EKLT repository metadata and docs`.
 
 ## Stage 21 - Final cumulative review
 
-- [ ] Review the complete cumulative upgrade against the accepted baseline.
-- [ ] Reconcile names, layout, APIs, exports, dependencies, packaging,
+- [x] Review the complete cumulative upgrade against the accepted baseline.
+- [x] Reconcile names, layout, APIs, exports, dependencies, packaging,
       documentation, and remaining dirty groups.
-- [ ] Run the complete native, wrapper, Python, MATLAB, ROS2, documentation,
+- [x] Run the complete native, wrapper, Python, MATLAB, ROS2, documentation,
       packaging, shell, structured-file, and exact-index gates.
-- [ ] Record unavailable ROS1 runtime validation as CI or environment evidence.
-- [ ] Confirm findings 4 and 7 remain explicitly deferred.
-- [ ] Stage only the acceptance record and directly required corrections.
-- [ ] Insert a dedicated correction stage before acceptance if a finding
+- [x] Record unavailable ROS1 runtime validation as CI or environment evidence.
+- [x] Confirm findings 4 and 7 remain explicitly deferred.
+- [x] Stage only the acceptance record and directly required corrections.
+- [x] Insert a dedicated correction stage before acceptance if a finding
       requires material source, packaging, or behavior changes; do not hide
       another functional batch in this final record.
-- [ ] Stop for the user commit titled
+- [x] Stop for the user commit titled
       `Finalize the EKLT template upgrade acceptance record`.
+
+Final evidence is recorded in
+`doc/developments/reports/cpp_cuda_template_upgrade_final_acceptance_2026-07-29.md`.
 
 ## Handoff to multi-dataset and online streaming
 
@@ -555,5 +558,5 @@ Each handoff stage remains one user commit:
 | 18 - Unified Python distribution and `event_vision_utils` foundation | accepted | Exact-index shared Python-plus-MATLAB Werror 54/54 and static Python Werror 50/50 passed with CMake installs and installed consumers. Simplified shared/static exact-artifact wheels passed relocated suites with 94 tests and one expected skip; the pure wheel and sdist passed the source-only suite with 89 tests and six native-optional skips. Doxygen, root source packaging, official ELOPE loading, structured-file, documentation/type/layout, and staged-byte gates passed | `000c5aaf62bcbec7be166102b8b1f45d2167caf1` |
 | 19 - Single-sequence ELOPE analysis pipeline | accepted | Exact-index shared/static Werror 50/50, installed consumers, Doxygen, CMake installs, relocated shared/static/pure packages, 166 source tests, and Jazzy colcon with ten tests passed. The full 386,785-event ELOPE run produced 2,434 EventPackets, 9,060 track rows across 66 IDs, 99.9918% duration coverage, 697 additive timing samples, validated labeled plots, and exact 4,879-frame event/track videos in 54.49 s at 244,624 KiB peak RSS with no swap | `945eb44ba77d94674dcd3467e6a0777a9ef69f41` |
 | 19A - Single-sequence runtime readability | accepted | Comment-only Python AST and shell executable-content parity against accepted Stage 19 passed. The isolated exact-index source suite reports 166 passed and seven native-optional skips; Python documentation/static checks, Bash, ShellCheck, staged-byte, and diff gates pass | `4c85225825b97bac285aad31e245c131c217bd16` |
-| 20 - Repository metadata and hygiene | awaiting user commit | Exact-index metadata, structured-file, link, stale-reference, Python parity, Doxygen, source-package, BuildKit, staged-byte, and diff gates passed | `pending` |
-| 21 - Final cumulative review | pending | Not run; requires accepted Stage 20 checkpoint | - |
+| 20 - Repository metadata and hygiene | accepted | Exact-index metadata, structured-file, link, stale-reference, Python parity, Doxygen, source-package, BuildKit, staged-byte, and diff gates passed | `6b9a9045db8d17f92164d0ec4301acf8a40823f0` |
+| 21 - Final cumulative review | awaiting user commit | Full cumulative donor/layout/API review; shared/static Werror 54/54; installed consumers; source, relocated-wrapper, and pure-package suites; MATLAB R2024b; Jazzy colcon; Doxygen; source packaging; cleanup safety; BuildKit; official ELOPE; structured/shell; and exact-index gates passed | `pending` |
