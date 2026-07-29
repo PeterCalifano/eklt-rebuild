@@ -133,7 +133,7 @@ jobs:
             libceres-dev \
             libeigen3-dev \
             libopencv-dev
-          python -m pip install numpy Pillow pytest wheel
+          python -m pip install matplotlib numpy Pillow pytest wheel
 
       - name: Build, test, and install generated wrapper
         run: |
@@ -203,9 +203,15 @@ jobs:
 
           relocated_tests="${RUNNER_TEMP}/eklt-python-tests"
           cp -R python/tests "${relocated_tests}"
+
+          # Repository-owned shell and evaluator entrypoints are covered by
+          # the source job; the relocated wheel contains only Python packages.
           env -u LD_LIBRARY_PATH \
             PYTHONPATH="${relocated_root}" \
-            python -m pytest -q -p no:cacheprovider "${relocated_tests}"
+            python -m pytest -q -p no:cacheprovider \
+              --ignore="${relocated_tests}/event_vision_utils/test_elope_pipeline_scripts.py" \
+              --ignore="${relocated_tests}/event_vision_utils/test_evaluate_outputs.py" \
+              "${relocated_tests}"
 
   hygiene:
     runs-on: ubuntu-24.04

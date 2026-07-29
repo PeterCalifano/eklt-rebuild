@@ -65,7 +65,8 @@ from an uncommitted parent-template baseline.
 - [x] Pin `lib/wrap` from its SSH origin at
       `bf9f78617830bfa88c70d81a1a791c0a0c90b548`.
 - [x] Replace the SWIG-like wrapper description with valid gtwrap syntax.
-- [x] Preserve the Python 3.12 `_fibar` API and NumPy behavior.
+- [x] Publish the Python 3.12 `eklt_rebuild` binding behind the typed
+      `event_vision_utils.recon` facade and preserve NumPy behavior.
 - [x] Generate and package the MATLAB wrapper for R2024b.
 - [x] Validate MATLAB exclusively through the existing system-runtime preload
       recipe; do not add a repository-local MATLAB launcher.
@@ -217,7 +218,7 @@ Acceptance evidence is recorded in
 - [x] Complete the accepted parent-helper synchronization and wrapper build
       foundation only in Stage 15, using the exact v1.12.1 release commit and
       helper blobs recorded there.
-- [ ] Replace the dirty broad Python native-library scan with explicit
+- [x] Replace the dirty broad Python native-library scan with explicit
       target-derived runtime packaging only in Stage 16.
 - [ ] Refresh historical acceptance text that names separate
       `libevent_recon_fibar_core` and `libevent_recon_fibar_adapters` artifacts
@@ -440,21 +441,21 @@ Each functional stage is exactly one mandatory user-commit boundary:
 
 ## Stage 19 - Single-sequence ELOPE analysis pipeline
 
-- [ ] Stage the official-dataset download and validation helpers,
+- [x] Stage the official-dataset download and validation helpers,
       single-sequence reconstruction and tracking orchestration, output
       evaluation, plots, event/patch/track videos, summaries, tests, and
       directly related documentation.
-- [ ] Build on the accepted Stage 14 ROS2 EventPacket runner, Stage 16 Python
+- [x] Build on the accepted Stage 14 ROS2 EventPacket runner, Stage 16 Python
       wrapper, and Stage 18 data model rather than retaining parallel codecs,
       loaders, or visualization stacks.
-- [ ] Define stable per-sequence artifact schemas and reader documentation so
+- [x] Define stable per-sequence artifact schemas and reader documentation so
       the later multi-sequence stage can aggregate results without changing the
       single-sequence contract.
-- [ ] Keep generated datasets and outputs ignored, and restrict cleanup to
+- [x] Keep generated datasets and outputs ignored, and restrict cleanup to
       explicitly owned artifacts below the selected output directory.
-- [ ] Do not add random multi-sequence selection, AEDAT4 ingestion, generic
+- [x] Do not add random multi-sequence selection, AEDAT4 ingestion, generic
       direct publishing, or online/asynchronous ROS2 behavior in this stage.
-- [ ] Stop for the user commit titled
+- [x] Stop for the user commit titled
       `Add the single-sequence ELOPE analysis pipeline`.
 
 ## Stage 20 - Repository metadata and hygiene
@@ -534,7 +535,7 @@ Each handoff stage remains one user commit:
 | 15 - Accepted wrapper build foundation | accepted | Signed v1.12.1 helper-set blob parity; exact-index shared/static Werror 49/49; build-linked, installed, and relocated Python imports plus FIBAR API calls; installed C++ consumers; Doxygen; source-package exclusions; and staged-byte parity passed | `bef852920d153a07229d7b7b71e696a35a065961` |
 | 16 - Portable Python package | accepted | Exact-index shared/static Werror 50/50; wrapper pytest; CMake installs and consumers; shared/static exact-artifact wheels; unrelated-library exclusion; `$ORIGIN`; relocated imports with empty `LD_LIBRARY_PATH`; Doxygen, source-package, structured-file, shell, and staged-byte gates passed | `af0d766706ce1366010b4d943b72d3d42ee86fb6` |
 | 17 - MATLAB R2024b wrapper | accepted | Exact-index shared/static Werror 52/52; four R2024b MEX regressions; exact-artifact toolbox installs; `$ORIGIN`; relocated shared/static execution with empty `LD_LIBRARY_PATH`; simultaneous Python generation; installed C++ consumers; MATLAB checkcode, Doxygen, source-package, and staged-byte gates passed | `19bc27a87788fc2f7334259ccb59824ad18fcefe` |
-| 18 - Unified Python distribution and `event_vision_utils` foundation | awaiting user commit | Exact-index shared Python-plus-MATLAB Werror 54/54 and static Python Werror 50/50 passed with CMake installs and installed consumers. Simplified shared/static exact-artifact wheels passed relocated suites with 94 tests and one expected skip; the pure wheel and sdist passed the source-only suite with 89 tests and six native-optional skips. Doxygen, root source packaging, official ELOPE loading, structured-file, documentation/type/layout, and staged-byte gates passed | `pending` |
-| 19 - Single-sequence ELOPE analysis pipeline | pending | Not run; requires accepted Stage 18 checkpoint | - |
+| 18 - Unified Python distribution and `event_vision_utils` foundation | accepted | Exact-index shared Python-plus-MATLAB Werror 54/54 and static Python Werror 50/50 passed with CMake installs and installed consumers. Simplified shared/static exact-artifact wheels passed relocated suites with 94 tests and one expected skip; the pure wheel and sdist passed the source-only suite with 89 tests and six native-optional skips. Doxygen, root source packaging, official ELOPE loading, structured-file, documentation/type/layout, and staged-byte gates passed | `000c5aaf62bcbec7be166102b8b1f45d2167caf1` |
+| 19 - Single-sequence ELOPE analysis pipeline | awaiting user commit | Exact-index shared/static Werror 50/50, installed consumers, Doxygen, CMake installs, relocated shared/static/pure packages, 166 source tests, and Jazzy colcon with ten tests passed. The full 386,785-event ELOPE run produced 2,434 EventPackets, 9,060 track rows across 66 IDs, 99.9918% duration coverage, 697 additive timing samples, validated labeled plots, and exact 4,879-frame event/track videos in 54.49 s at 244,624 KiB peak RSS with no swap | `pending` |
 | 20 - Repository metadata and hygiene | pending | Not run; requires accepted Stage 19 checkpoint | - |
 | 21 - Final cumulative review | pending | Not run; requires accepted Stage 20 checkpoint | - |

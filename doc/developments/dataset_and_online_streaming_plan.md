@@ -89,8 +89,9 @@ Every stage follows the same sequence:
 - [ ] Perform a read-only three-way review of the accepted upgrade commit, the
       live checkout, and this plan.
 - [ ] Record the accepted Stage 14 ROS2 interface, Stage 18 data-model API,
-      Stage 19 artifact schemas, and Stage 21 cumulative validation in the
-      checkpoint ledger.
+      Stage 19 artifact schemas from
+      `doc/elope_single_sequence_pipeline.md`, and Stage 21 cumulative
+      validation in the checkpoint ledger.
 - [ ] Inventory the available ELOPE sequences without downloading or modifying
       dataset files.
 - [ ] Verify the local ROS2 Jazzy and Python 3.12 entrypoints required by the
@@ -146,6 +147,8 @@ Every stage follows the same sequence:
       labeled PNG plots, H.264 MP4 videos, and text logs.
 - [ ] Add one aggregate JSON report and a compact CSV sequence table without
       changing the accepted single-sequence schemas.
+- [ ] Treat `doc/elope_single_sequence_pipeline.md` as the version-1 reader and
+      ownership contract; extend only the aggregate layer in this stage.
 - [ ] Document readers for JSON, CSV/pandas, NumPy text input, PIL/OpenCV, and
       FFmpeg/OpenCV.
 - [ ] Make generated EventPacket bags ephemeral by default.

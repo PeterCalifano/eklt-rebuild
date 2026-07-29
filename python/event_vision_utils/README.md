@@ -20,6 +20,14 @@ single `eklt-rebuild` distribution alongside the distinct `eklt_rebuild` and
   windows.
 - Array visualization primitives return NumPy accumulation, polarity, and time
   surfaces without writing files.
+- File-producing analytical plots use Matplotlib and publish atomically with
+  explicit title, subtitle, unit-bearing axis, and bounded-sample contracts.
+- Event previews, FIBAR diagnostics, and track overlays stream frames to one
+  MP4 or a contiguous PNG-sequence fallback. Their summaries retain aggregate
+  metadata rather than a path per frame. Encoded artifacts are limited to
+  16,777,216 pixels per frame and 1,000,000 frames.
+- The strict `id time_s x_px y_px` track reader rejects malformed or
+  per-feature time-regressing rows without silently omitting observations.
 - Core imports do not require EKLT, ROS, FIBAR, OpenCV, MATLAB, or project
   scripts.
 - Optional FIBAR adaptation uses the accepted `eklt_rebuild` distribution; it
@@ -73,6 +81,39 @@ PYTHONPATH=python python3.12 -m pytest -q \
   python/tests/event_vision_utils/test_visualization_arrays.py
 ```
 
+## Single-sequence artifact examples
+
+Render transport-neutral ELOPE diagnostics through the accepted native wrapper:
+
+```bash
+PYTHONPATH=python python3.12 \
+  -m event_vision_utils.examples.reconstruct_elope_fibar \
+  --input data/elope/test/0028.npz \
+  --output-dir outputs/elope_reconstruction
+```
+
+Expected output includes `summary.json`, labeled plots, an event preview,
+reconstruction video, and a bounded patch mosaic. If `ffmpeg` is unavailable,
+each video path is replaced by a numbered PNG directory described by the same
+typed metadata.
+
+Render accepted Stage 14 ROS2 track rows without introducing another ROS
+transport implementation:
+
+```bash
+PYTHONPATH=python python3.12 \
+  -m event_vision_utils.examples.render_elope_tracks \
+  --input data/elope/test/0028.npz \
+  --tracks outputs/official_elope_event_only/tracking/tracks.txt \
+  --output outputs/official_elope_event_only/tracking/eklt_tracks.mp4
+```
+
+Expected summary:
+
+```text
+outputs/official_elope_event_only/tracking/track_video_summary.json
+```
+
 ## Extraction checklist
 
 - Preserve the public fields, timestamp/polarity conventions, and import paths.
@@ -82,6 +123,8 @@ PYTHONPATH=python python3.12 -m pytest -q \
 - Keep `EventArray` as the only event-data contract exported by this namespace;
   do not add aliases for project-specific bridge representations.
 - Replace EKLT-local imports with the extracted package dependency.
-- Keep later file-producing plots, streamed videos, ROS2 publishers, dataset
-  iteration, and asynchronous processing in their owning stages until their
-  APIs and artifact schemas are accepted.
+- Move the strict track reader, plot contracts, bounded event-cloud/rate
+  renderers, and streamed video metadata together with their focused tests.
+- Keep ROS2 publishers, multi-sequence dataset iteration, and asynchronous
+  processing outside this package until their later owning stages are
+  accepted.
