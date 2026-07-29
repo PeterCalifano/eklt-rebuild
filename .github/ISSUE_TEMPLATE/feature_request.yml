@@ -1,0 +1,66 @@
+name: Feature request
+description: >-
+  Propose a scoped improvement to EKLT, its wrappers, ROS integrations,
+  documentation, or CI.
+title: "[FEATURE] "
+labels:
+  - major-enhancement
+assignees:
+  - PeterCalifano
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or missing capability
+      description: Explain the current limitation and who is affected.
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Owning surface
+      options:
+        - ROS-free C++ core
+        - ROS1 frame-backed tracker
+        - Event-only initialization
+        - ROS2 overlay
+        - FIBAR reconstruction
+        - Python wrapper or utilities
+        - MATLAB wrapper
+        - Build, installation, or packaging
+        - Documentation or CI
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the intended behavior, API, files, or workflow stages.
+    validations:
+      required: true
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Compatibility impact
+      description: >-
+        State how the frame-backed path, C++17 targets, and existing consumers
+        are preserved.
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation plan
+      description: >-
+        List the native, wrapper, ROS, example, and documentation gates that
+        should prove the change.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Note narrower or rejected approaches when relevant.
+    validations:
+      required: false

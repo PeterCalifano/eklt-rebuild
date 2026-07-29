@@ -4,26 +4,22 @@
 			"path": "."
 		},
 		{
-			"path": "../../home/vscode/eklt_catkin_ws"
-		},
-		{
-			"path": "../v2e"
-		},
-		{
 			"path": "../EventDataGenerationLib"
 		},
 		{
-			"path": "../../../../../../home/peterc/devDir/rendering-sw/spectral_raytracer_dev"
+			"path": "../event-cameras-primitives"
+		},
+		{
+			"path": "../senpi_ebi"
+		},
+		{
+			"path": "../SuperEvent"
+		},
+		{
+			"path": "../v2e"
 		}
 	],
 	"settings": {
-		"ros.distro": "noetic",
-		"ROS2.distro": "noetic",
-		"python.autoComplete.extraPaths": [
-			"/opt/ros/noetic/lib/python3/dist-packages"
-		],
-		"python.analysis.extraPaths": [
-			"/opt/ros/noetic/lib/python3/dist-packages"
-		]
+		"ROS2.distro": "jazzy"
 	}
 }

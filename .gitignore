@@ -35,7 +35,12 @@ ros2/build/
 ros2/install/
 ros2/log/
 
-# Generated caches and local agent context
+# Generated caches, editor backups, and local agent context
+*~
+*.bak
+*.bak.*
+*.orig
+*.rej
 **/__pycache__/
 *.py[cod]
 .pytest_cache/
@@ -46,3 +51,14 @@ ros2/log/
 dist/
 
 CONTEXT.md
+
+# IDE and operating-system state
+.idea/
+.vs/
+.vscode/
+*.asv
+*.swp
+*.swo
+*.user
+*.user.*
+.DS_Store

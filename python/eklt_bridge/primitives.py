@@ -83,20 +83,18 @@ class EventStream:
         return int(self.timestamp_ns[-1])
 
     @classmethod
-    def from_timestamp_ns(
-        cls,
-        timestamp_ns: np.ndarray,
-        *,
-        x: np.ndarray,
-        y: np.ndarray,
-        p01: np.ndarray,
-        width: int,
-        height: int,
-        header_timestamp_ns: int | None = None,
-        signal_noise: np.ndarray | None = None,
-        source_format: str | None = None,
-        metadata: dict[str, Any] | None = None,
-    ) -> "EventStream":
+    def from_timestamp_ns(cls,
+                          timestamp_ns: np.ndarray,
+                          *,
+                          x: np.ndarray,
+                          y: np.ndarray,
+                          p01: np.ndarray,
+                          width: int,
+                          height: int,
+                          header_timestamp_ns: int | None = None,
+                          signal_noise: np.ndarray | None = None,
+                          source_format: str | None = None,
+                          metadata: dict[str, Any] | None = None) -> "EventStream":
         """Build stream from bridge/ROS nanosecond timestamps."""
 
         stream_metadata = dict(metadata or {})
@@ -115,14 +113,12 @@ class EventStream:
         )
 
     @classmethod
-    def from_v2e_events(
-        cls,
-        events_t_x_y_p: np.ndarray | None,
-        *,
-        width: int,
-        height: int,
-        header_timestamp_ns: int,
-    ) -> "EventStream":
+    def from_v2e_events(cls,
+                        events_t_x_y_p: np.ndarray | None,
+                        *,
+                        width: int,
+                        height: int,
+                        header_timestamp_ns: int) -> "EventStream":
         """Build stream from v2e ``[t_s, x, y, polarity]`` event matrix."""
 
         if events_t_x_y_p is None or len(events_t_x_y_p) == 0:
@@ -163,14 +159,12 @@ class EventStream:
         )
 
     @classmethod
-    def empty(
-        cls,
-        *,
-        width: int,
-        height: int,
-        header_timestamp_ns: int,
-        source_format: str | None = None,
-    ) -> "EventStream":
+    def empty(cls,
+              *,
+              width: int,
+              height: int,
+              header_timestamp_ns: int,
+              source_format: str | None = None) -> "EventStream":
         """Return empty event stream with known image size."""
 
         return cls(

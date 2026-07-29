@@ -1,5 +1,10 @@
 # EKLT ROS2 Porting Plan
 
+> **Archived migration plan.** The accepted ROS2 overlay no longer follows the
+> hybrid/cutover sequence below. Current behavior is documented in
+> `doc/ros2_event_only.md`; future multi-dataset and online work is governed by
+> `doc/developments/dataset_and_online_streaming_plan.md`.
+
 ## Summary
 
 Implement the ROS2 migration in three gated stages, with tests added and run at the end of each stage before moving on.

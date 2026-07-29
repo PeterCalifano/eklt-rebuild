@@ -1,0 +1,4 @@
+# These inherited donor modules are intentionally kept byte-for-byte identical.
+cmake/HandleGitVersion.cmake -whitespace
+cmake/HandleWrapper.cmake -whitespace
+cmake/cmake_utils.cmake -whitespace

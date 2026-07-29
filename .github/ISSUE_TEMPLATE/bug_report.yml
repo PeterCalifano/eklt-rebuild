@@ -1,0 +1,81 @@
+name: Bug report
+description: >-
+  Report a reproducible EKLT build, runtime, wrapper, documentation, or
+  packaging problem.
+title: "[BUG] "
+labels:
+  - major-bug
+assignees: []
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: State the observed failure and expected behavior.
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Affected surface
+      options:
+        - ROS-free C++ core
+        - ROS1 Noetic tracker
+        - ROS2 Jazzy overlay
+        - FIBAR reconstruction
+        - Python wrapper or utilities
+        - MATLAB R2024b wrapper
+        - Optional CUDA support
+        - Build, installation, or packaging
+        - Documentation or CI
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction commands
+      description: Include exact commands from a clean, out-of-tree build or workspace.
+      render: bash
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output excerpt
+      description: Include the first real error and surrounding context.
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: >-
+        Ubuntu 20.04, ROS Noetic, GCC 9, CMake 3.22, Python 3.12,
+        MATLAB R2024b, ...
+    validations:
+      required: true
+  - type: textarea
+    id: configuration
+    attributes:
+      label: Configuration
+      description: >-
+        Include relevant CMake options, ROS distro, wrapper mode, toolchain,
+        and whether a devcontainer was used.
+      render: text
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: >-
+            I reproduced this in a clean build directory or clean ROS
+            workspace.
+        - label: >-
+            I identified whether this affects the frame-backed path,
+            event-only path, or both.
+        - label: >-
+            I included the Python or MATLAB version when reporting a wrapper
+            issue.

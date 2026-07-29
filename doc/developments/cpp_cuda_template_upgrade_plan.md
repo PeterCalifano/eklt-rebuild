@@ -121,9 +121,9 @@ Acceptance evidence is recorded in
 - [x] Record adopted, adapted, and intentionally skipped parent-only surfaces.
 - [x] Re-run affected build, package, wrapper, documentation, structured-file,
       shell, and stale-reference gates.
-- [ ] Resolve the inherited parent/target BuildKit `UndefinedVar` warning for
-      the optional CUDA `LD_LIBRARY_PATH` declaration in Stage 20, or record the
-      exact upstream blocker there before final acceptance.
+- [x] Resolve the inherited parent/target BuildKit `UndefinedVar` warning by
+      using a fixed CUDA library path; the Stage 20 BuildKit check reports no
+      warning.
 
 ## Stage 9 - P1 packaging and deletion safety
 
@@ -472,27 +472,28 @@ Each functional stage is exactly one mandatory user-commit boundary:
       static checks, Bash syntax, ShellCheck, staged-byte parity, and
       `git diff --cached --check`.
 - [x] Stop for the user commit titled
-      `Document ELOPE pipeline runtime invariants`.
+      `Improve documentation and code comments`.
 
 ## Stage 20 - Repository metadata and hygiene
 
-- [ ] Review issue and pull-request templates, attributes, ignore rules,
+- [x] Review issue and pull-request templates, attributes, ignore rules,
       workspace guidance, and deprecated-file removal as one maintenance batch.
-- [ ] Refresh obsolete source paths and separate-library references.
-- [ ] Correct agent guidance to the accepted src-local native adapter-header
+- [x] Refresh obsolete source paths and separate-library references.
+- [x] Correct agent guidance to the accepted src-local native adapter-header
       layout without restoring the removed repository-root `include/`
       directory.
-- [ ] Resolve the Stage 8 BuildKit warning or record its exact authorized
-      upstream blocker.
-- [ ] Archive or mark superseded implementation audits and reconcile the
+- [x] Resolve the Stage 8 BuildKit warning with the fixed CUDA library path and
+      confirm that the BuildKit check reports no warning.
+- [x] Archive or mark superseded implementation audits and reconcile the
       active event-only, ROS2, and template-upgrade plans.
-- [ ] Keep feature-specific scripts and documentation with their owning earlier
+- [x] Keep feature-specific scripts and documentation with their owning earlier
       stages.
-- [ ] Validate structured files, stale references, source packaging, and
+- [x] Validate structured files, stale references, source packaging, and
       diffs.
-- [ ] Stop for the user commit titled
+- [x] Review for unnecessary complexity while preserving functionality,
+      documentation, development guidance, and readable implementation.
+- [x] Stop for the user commit titled
       `Refresh EKLT repository metadata and guidance`.
-- [ ] Review aiming at simplifying to reduce complexity while keeping functionalities, documentation and code comments for development and readable implementation. Unnecessary or uselessly single use (unless improving clarity a lot) abstractions, indirections, local helpers should be removed
 
 ## Stage 21 - Final cumulative review
 
@@ -553,6 +554,6 @@ Each handoff stage remains one user commit:
 | 17 - MATLAB R2024b wrapper | accepted | Exact-index shared/static Werror 52/52; four R2024b MEX regressions; exact-artifact toolbox installs; `$ORIGIN`; relocated shared/static execution with empty `LD_LIBRARY_PATH`; simultaneous Python generation; installed C++ consumers; MATLAB checkcode, Doxygen, source-package, and staged-byte gates passed | `19bc27a87788fc2f7334259ccb59824ad18fcefe` |
 | 18 - Unified Python distribution and `event_vision_utils` foundation | accepted | Exact-index shared Python-plus-MATLAB Werror 54/54 and static Python Werror 50/50 passed with CMake installs and installed consumers. Simplified shared/static exact-artifact wheels passed relocated suites with 94 tests and one expected skip; the pure wheel and sdist passed the source-only suite with 89 tests and six native-optional skips. Doxygen, root source packaging, official ELOPE loading, structured-file, documentation/type/layout, and staged-byte gates passed | `000c5aaf62bcbec7be166102b8b1f45d2167caf1` |
 | 19 - Single-sequence ELOPE analysis pipeline | accepted | Exact-index shared/static Werror 50/50, installed consumers, Doxygen, CMake installs, relocated shared/static/pure packages, 166 source tests, and Jazzy colcon with ten tests passed. The full 386,785-event ELOPE run produced 2,434 EventPackets, 9,060 track rows across 66 IDs, 99.9918% duration coverage, 697 additive timing samples, validated labeled plots, and exact 4,879-frame event/track videos in 54.49 s at 244,624 KiB peak RSS with no swap | `945eb44ba77d94674dcd3467e6a0777a9ef69f41` |
-| 19A - Single-sequence runtime readability | awaiting user commit | Comment-only Python AST and shell executable-content parity against accepted Stage 19 passed. The isolated exact-index source suite reports 166 passed and seven native-optional skips; Python documentation/static checks, Bash, ShellCheck, staged-byte, and diff gates pass | `pending` |
-| 20 - Repository metadata and hygiene | pending | Not run; requires accepted Stage 19A follow-up | - |
+| 19A - Single-sequence runtime readability | accepted | Comment-only Python AST and shell executable-content parity against accepted Stage 19 passed. The isolated exact-index source suite reports 166 passed and seven native-optional skips; Python documentation/static checks, Bash, ShellCheck, staged-byte, and diff gates pass | `4c85225825b97bac285aad31e245c131c217bd16` |
+| 20 - Repository metadata and hygiene | awaiting user commit | Exact-index metadata, structured-file, link, stale-reference, Python parity, Doxygen, source-package, BuildKit, staged-byte, and diff gates passed | `pending` |
 | 21 - Final cumulative review | pending | Not run; requires accepted Stage 20 checkpoint | - |

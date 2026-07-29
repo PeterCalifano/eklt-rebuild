@@ -1,11 +1,20 @@
 # EKLT: Asynchronous, Photometric Feature Tracking using Events and Frames
+
 [<img src="images/thumbnail.png" width="400">](https://youtu.be/ZyD1YPW1h4U)
 
-This repository implements the work in the 2019 IJCV paper [**EKLT: Asynchronous, Photometric Feature Tracking using Events and Frames**](http://rpg.ifi.uzh.ch/docs/IJCV19_Gehrig.pdf) by [Daniel Gehrig](https://danielgehrig18.github.io/), [Henri Rebecq](http://henri.rebecq.fr), [Guillermo Gallego](http://www.guillermogallego.es), and [Davide Scaramuzza](http://rpg.ifi.uzh.ch/people_scaramuzza.html).
-Also check out our feature tracking evaluation package [here](https://github.com/uzh-rpg/rpg_feature_tracking_analysis).
+This repository implements the 2019 IJCV paper
+[**EKLT: Asynchronous, Photometric Feature Tracking using Events and
+Frames**](http://rpg.ifi.uzh.ch/docs/IJCV19_Gehrig.pdf) by
+[Daniel Gehrig](https://danielgehrig18.github.io/),
+[Henri Rebecq](http://henri.rebecq.fr),
+[Guillermo Gallego](http://www.guillermogallego.es), and
+[Davide Scaramuzza](http://rpg.ifi.uzh.ch/people_scaramuzza.html).
+The original feature-tracking evaluation package is available
+[here](https://github.com/uzh-rpg/rpg_feature_tracking_analysis).
 
-### Citation
-A pdf of the paper is [available here](http://rpg.ifi.uzh.ch/docs/IJCV19_Gehrig.pdf). If you use any of this code, please cite this publication as follows:
+## Citation
+
+If you use this code, please cite:
 
 ```bibtex
 @Article{Gehrig19ijcv,
@@ -16,103 +25,190 @@ A pdf of the paper is [available here](http://rpg.ifi.uzh.ch/docs/IJCV19_Gehrig.
   year          = 2019,
 }
 ```
+
 ## Overview
 
-EKLT works by leveraging the complementarity between events and frames for feature tracking. Using the events, it manages to track in the blind-time between two frames. First features are extracted on the frames and then tracked using only the events. The tracker then produces asynchronous feature tracks with high temporal resolution. More 
-details can be found in the [paper](http://rpg.ifi.uzh.ch/docs/IJCV19_Gehrig.pdf) and [video](https://youtu.be/ZyD1YPW1h4U).
+EKLT tracks frame-initialized features asynchronously between images using
+events. This repository preserves that original ROS1 frame-backed path and also
+provides:
 
-## Installation
+- one ROS-free C++17 `libeklt-rebuild` containing EKLT orchestration, FIBAR
+  reconstruction, visualization, and wrapper adapters;
+- an alternative FIBAR-backed event-only initialization path;
+- a unified Python 3.12 distribution and MATLAB R2024b gtwrap interface;
+- an experimental ROS2 Jazzy EventPacket overlay;
+- a validated single-sequence ELOPE reconstruction and tracking pipeline.
 
-This code was tested on [ROS melodic](http://wiki.ros.org/melodic/Installation) and [ROS kinetic](http://wiki.ros.org/kinetic/Installation).
-Install [catkin tools](http://catkin-tools.readthedocs.org/en/latest/installing.html) and [vcstool](https://github.com/dirk-thomas/vcstool) if needed:
+The frame-backed and event-only initialization modes are first-class
+alternatives. The ROS1 and ROS2 layers remain transport adapters around the
+shared native implementation.
 
-    sudo apt install python-catkin-tools python-vcstool
+## Build and install
 
-Create a new catkin workspace if needed:
+Initialize the required FIBAR checkout and build the ROS-free native library
+out of source:
 
-    mkdir -p catkin_ws/src
-    cd catkin_ws
-    catkin config --init --mkdirs --extend /opt/ros/melodic  --cmake-args -DCMAKE_BUILD_TYPE=Release
-    
-Then clone the repo and all its dependencies using vcs-import
-    
-    cd src
-    git clone git@github.com:uzh-rpg/rpg_eklt.git
-    vcs-import < rpg_eklt/dependencies.yaml
+```bash
+git submodule update --init lib/fibar_lib
+./build_lib.sh --docs --install --package --source-package
+```
 
-Finally, build the project and then source the workspace
-    
-    catkin build eklt_rebuild
-    source ~/catkin_ws/devel/setup.bash
-    
-## Running Example
+`--clean` removes only a named `build/<name>` directory whose CMake cache
+belongs to this checkout. It rejects the repository root, the aggregate
+`build/` directory, symlink escape, non-CMake directories, and foreign build
+trees.
 
-Download [boxes_6dof](http://rpg.ifi.uzh.ch/datasets/davis/boxes_6dof.bag) from the [Event Camera Dataset](http://rpg.ifi.uzh.ch/davis_data.html) which was recorded using the [DVS ROS driver](https://github.com/uzh-rpg/rpg_dvs_ros) into a new directory
+Profiling and cross-toolchain configuration are explicit:
 
-    cd /tmp/
-    wget http://rpg.ifi.uzh.ch/datasets/eklt_example.zip
-    unzip eklt_example.zip
-    rm eklt_example.zip
-    
-Run EKLT with the following command:
-    
-    roslaunch eklt_rebuild eklt.launch tracks_file_txt:=/tmp/eklt_example/tracks.txt v:=1
+```bash
+./build_lib.sh --profile
+./build_lib.sh \
+  --toolchain cmake/toolchains/defaults/aarch64-linux-gnu.cmake \
+  --skip-tests
+```
 
-In a separate terminal play the rosbag:
-  
-    rosbag play /tmp/eklt_example/boxes_6dof.bag
+Cross compilers, sysroots, and target dependencies remain
+environment-provided.
 
-**Configuration parameters**: 
-Configuration parameters for eklt can be viewed by running the following command in a sourced terminal:
+### Python 3.12 and MATLAB R2024b
 
-    rosrun eklt_rebuild eklt_node --help
+Initialize gtwrap, then build either generated interface:
 
-The individual parameters can be changed in `config/eklt.conf`. In particular, the parameter `min_corners` has been set to 0 which makes it such that no new features are initialized after the first image. This configuration was used in the paper. However, for continuous tracking you can set this value higher (50 is a good number).
-Additional optional parameters can be set through the launch file `eklt.launch`:
+```bash
+git submodule update --init lib/wrap
+./build_lib.sh --python
+./build_lib.sh --matlab
+```
 
-* `v:=1` verbosity level of `VLOG` from the `glog` library
-* `bag:=/path/to.bag`: path to the bag which will be used to perform evalution
-* `tracks_file_txt:=/path/to/file.txt`: path to output file where feature tracks will be stored.
+Build a relocatable Python wheel only after CMake has generated the exact
+native-artifact manifest:
 
-## Evaluation
+```bash
+python3.12 -m pip wheel --no-build-isolation --no-deps \
+  --wheel-dir build/wheels python
+```
 
-The tracks file generated by the prevous command contains all of the information necessary to reconstruct feature tracks. The feature tracks are stored in the following format:
+The shared wheel contains the generated extension and only its required
+`libeklt-rebuild` runtime, with loader-relative paths. The static wheel contains
+only the extension. See the
+[`eklt-rebuild` Python distribution guide](doc/eklt_rebuild_python_wrapper.md)
+and the [FIBAR Python facade guide](doc/fibar_python_wrapper.md).
 
-|feature id| timestamp          | x     | y     |
-|:--------:|:------------------:|:-----:|:-----:|
-|0         |1468940293.922985274|187.032|132.671|
-|2         |1468940293.958816290|204.603|105.36 |
-|1         |1468940293.957388878|222.378|104.176|
-|0         |1468940293.964686394|223.596|19.1384|
-|1         |1468940293.960546732|182.122|52.1019|
-|2         |1468940293.960608244|172.227|47.1469|
+MATLAB support targets R2024b and requires the documented system C++ runtime
+preload. See the [MATLAB wrapper guide](doc/fibar_matlab_wrapper.md).
 
-These feature tracks can be used directly for evaluation with [this feature tracking analysis package](https://github.com/uzh-rpg/rpg_feature_tracking_analysis). First clone the repo into your workspace 
-    
-    cd ~/catkin_ws/src
-    git clone git@github.com:uzh-rpg/rpg_feature_tracking_analysis.git
- 
- and run the following command
+### ROS1 Noetic
 
-    python ~/catkin_ws/src/rpg_feature_tracking_analysis/evaluate_tracks.py --error_threshold 10 --tracker_type KLT --file /tmp/eklt_example/tracks.txt --dataset /tmp/eklt_example/dataset.yaml --root /tmp/eklt_example/ --plot_errors
+Build the original tracker in an independently managed catkin workspace:
 
-A preview of the output (stored in `/tmp/eklt_example/results/errors.pdf`) is shown below. In addition, the tracking error and feature age are stored in `/tmp/eklt_example/results/errors.txt` and `/tmp/eklt_example/results/feature_age.txt` respectively. 
+```bash
+./build_ros1.sh \
+  --workspace "$HOME/eklt_catkin_ws" \
+  --import-dependencies \
+  --jobs 1
+source "$HOME/eklt_catkin_ws/devel/setup.bash"
+```
 
-<img src="images/errors.png" width="600">
+Download `boxes_6dof.bag` from the
+[Event Camera Dataset](http://rpg.ifi.uzh.ch/davis_data.html), then run the
+frame-backed tracker:
+
+```bash
+roslaunch eklt_rebuild eklt.launch \
+  bag:=/path/to/boxes_6dof.bag \
+  tracks_file_txt:=/tmp/eklt_tracks.txt \
+  v:=1
+```
+
+Enable the alternative event-only initialization explicitly:
+
+```bash
+roslaunch eklt_rebuild eklt.launch \
+  bag:=/path/to/boxes_6dof.bag \
+  event_only_mode:=true \
+  bootstrap:=events \
+  tracks_file_txt:=/tmp/eklt_event_only_tracks.txt
+```
+
+View the available gflags in a sourced workspace with:
+
+```bash
+rosrun eklt_rebuild eklt_node --help
+```
+
+The default paper configuration keeps `min_corners=0`. Raise it, for example
+to `50`, when continuous feature replenishment is required.
+
+### ROS2 Jazzy and official ELOPE
+
+Build the independent overlay:
+
+```bash
+./build_ros2.sh --workspace "$PWD/eklt_ros2_ws" --jobs 1
+source "$PWD/eklt_ros2_ws/install/setup.bash"
+```
+
+After building the Python wrapper, run one official ELOPE sequence through
+FIBAR diagnostics, EventPacket conversion, ROS2 EKLT tracking, analysis, and
+video generation:
+
+```bash
+scripts/download_elope_dataset.sh --output-dir data/elope --first-only
+scripts/run_official_elope_event_only_pipeline_demo.sh \
+  --input data/elope/test/0028.npz \
+  --output-dir outputs/official_elope_event_only \
+  --overlay-setup "$PWD/eklt_ros2_ws/install/setup.bash"
+```
+
+The pipeline validates its JSON, CSV, track, plot, and video artifacts. Its
+stable contract and accepted full-sequence evidence are documented in:
+
+- [Single-sequence ELOPE artifact contract](doc/elope_single_sequence_pipeline.md)
+- [Official ELOPE acceptance report](doc/developments/official_elope_acceptance_report.md)
+- [ROS2 event-only guide](doc/ros2_event_only.md)
+- [Event-only architecture guide](doc/eklt_events_only.md)
+- [Known limitations](doc/known_limitations.md)
+
+## Track format and evaluation
+
+Track files contain one whitespace-delimited observation per row:
+
+| feature id | timestamp [s] | x [px] | y [px] |
+| ---: | ---: | ---: | ---: |
+| 0 | 1468940293.922985274 | 187.032 | 132.671 |
+| 2 | 1468940293.958816290 | 204.603 | 105.360 |
+| 1 | 1468940293.957388878 | 222.378 | 104.176 |
+
+The Stage 19 readers require a nonnegative integer feature ID, finite
+coordinates and timestamp, and nondecreasing time per feature. Strictly
+validate generated example artifacts with:
+
+```bash
+PYTHONPATH=python python3.12 scripts/evaluate_outputs.py \
+  outputs/official_elope_event_only/tracking
+```
+
+The original
+[feature-tracking analysis package](https://github.com/uzh-rpg/rpg_feature_tracking_analysis)
+can consume the same track representation for dataset-specific error
+evaluation.
 
 ## Visualization
 
-When running the example a visualization of the feature tracks is publisher to the topic `/feature_tracks`
+The ROS1 tracker publishes its feature overlay on `/feature_tracks`. The ROS2
+overlay publishes the equivalent bounded `bgr8` image on
+`/eklt/feature_tracks` for standard tools such as `rqt_image_view`.
 
 <img src="images/feature_tracks_preview.png" width="600">
 
-The visualization shows the features projected on to the current frames together with their flow angle estimate (blue arrow). Changing the flags `display_features`, `display_feature_id` and `display_feature_patches` toggle the display of the features, feature ids and feature patches respectively.
+The overlay shows feature centers, flow directions, and optionally IDs and
+patch outlines. No repository-owned GUI is required.
 
-## Additional Resources on Event Cameras
+## Additional event-camera resources
 
-* [Event-based Vision Survey](http://rpg.ifi.uzh.ch/docs/EventVisionSurvey.pdf)
-* [List of Event-based Vision Resources](https://github.com/uzh-rpg/event-based_vision_resources)
-* [Event Camera Dataset](http://rpg.ifi.uzh.ch/davis_data.html)
-* [Event Camera Simulator](http://rpg.ifi.uzh.ch/esim)
-* [RPG research page on Event Cameras](http://rpg.ifi.uzh.ch/research_dvs.html)
-* [EKLT Conference paper, ECCV'18](http://rpg.ifi.uzh.ch/docs/ECCV18_Gehrig.pdf)
+- [Event-based Vision Survey](http://rpg.ifi.uzh.ch/docs/EventVisionSurvey.pdf)
+- [Event-based Vision Resources](https://github.com/uzh-rpg/event-based_vision_resources)
+- [Event Camera Dataset](http://rpg.ifi.uzh.ch/davis_data.html)
+- [Event Camera Simulator](http://rpg.ifi.uzh.ch/esim)
+- [RPG event-camera research](http://rpg.ifi.uzh.ch/research_dvs.html)
+- [EKLT ECCV 2018 paper](http://rpg.ifi.uzh.ch/docs/ECCV18_Gehrig.pdf)

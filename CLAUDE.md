@@ -1,79 +1,92 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Read `AGENTS.md` first. It is the authoritative repository policy for template
+inheritance, review quality, wrappers, MATLAB, ROS boundaries, Git safety, and
+external-tool stop conditions.
 
 ## Project Overview
 
-EKLT (Event-based KLT) is a ROS (catkin) C++11 package that performs asynchronous photometric feature tracking using events from a DVS (Dynamic Vision Sensor) event camera and standard image frames. It implements the IJCV 2019 paper by Gehrig et al. Features are detected on frames (Harris corners via OpenCV `goodFeaturesToTrack`) and tracked asynchronously using events between frames, producing high-temporal-resolution feature tracks.
+EKLT implements asynchronous photometric feature tracking using event-camera
+events and conventional frames. The repository now contains four related but
+separate surfaces:
+
+- the original ROS1 Noetic frame-backed tracker;
+- a ROS-free native initialization and photometric-tracking core;
+- FIBAR reconstruction with Python 3.12 and MATLAB R2024b gtwrap adapters;
+- an experimental ROS2 Jazzy event-only overlay.
+
+The frame-backed and event-only initialization paths are alternatives. Do not
+reduce either path to a compatibility fallback.
 
 ## Build Commands
 
-This is a catkin package. It is **not** built in-tree — it must live inside a catkin workspace.
+Build the ROS-free native targets out of source:
 
-### Full setup (devcontainer or fresh environment)
 ```bash
-# Installs system deps, creates catkin workspace at ~/eklt_catkin_ws, clones dependencies, builds
+git submodule update --init lib/fibar_lib
 ./build_lib.sh
 ```
 
-### Incremental build (after workspace exists)
+Optional native gates:
+
 ```bash
-cd ~/eklt_catkin_ws
-catkin build eklt
-source devel/setup.bash
+./build_lib.sh --docs --install --package
+./build_lib.sh --profile
+./build_lib.sh --python
+./build_lib.sh --matlab
 ```
 
-### Run the example
-```bash
-# Requires data in data/eklt_example/ and a built workspace
-./test_example.sh
-```
+MATLAB must be R2024b and must preload the system `libgcc_s` and `libstdc++`.
+Use the existing workstation launcher or invoke MATLAB manually; do not add a
+repository-local launcher.
 
-### Run the tracker directly
-```bash
-roslaunch eklt eklt.launch tracks_file_txt:=/tmp/tracks.txt v:=1
-# In another terminal: rosbag play <bag_file>
-```
+Build ROS independently:
 
-### View configurable parameters
 ```bash
-rosrun eklt eklt_node --help
+./build_ros1.sh --import-dependencies
+./build_ros2.sh
 ```
 
 ## Architecture
 
-The package has four core components, all under the `tracker` and `nlls` namespaces:
+- `ros1/`: original ROS1 transport, parameters, launch-facing adapters, and
+  compatibility headers.
+- `src/eklt_core/`: ROS-free initialization, tracking, and orchestration.
+- `src/event_recon_fibar_core/`: native FIBAR facade.
+- `src/visualization/`: transport-neutral feature rendering.
+- `src/wrap_adapters/`: Eigen-backed wrapper dtype adaptation.
+- `wrap_interfaces/fibar_reconstructor.i`: shared gtwrap declaration for
+  Python and MATLAB.
+- `python/`: the unified `eklt-rebuild` distribution containing
+  `eklt_rebuild`, `eklt_bridge`, and extraction-ready `event_vision_utils`.
+- `ros2/eklt_rebuild/`: independent experimental ROS2 event-only overlay.
 
-- **`eklt_node.cpp`** — Entry point. Defines all gflags parameters, creates Tracker and Viewer, spins ROS. All tunable parameters are gflags defined here (not ROS params), overridden via `config/eklt.conf` flagfile.
+## Required Boundaries
 
-- **`Tracker`** (`tracker.h`/`tracker.cpp`) — Main processing class. Subscribes to `/dvs/events` and `/dvs/image_raw`. Detects Harris corners on frames, assigns each a `Patch`, then processes events in a dedicated thread (`processEvents`). Handles bootstrapping (KLT or event-based), adaptive batch sizing (paper eq. 15), and feature lifecycle (init, track, discard, replace).
-
-- **`Patch`** (`patch.h`) — Data structure for a tracked feature. Holds the event buffer (deque), affine warp matrix, optical flow angle, tracking quality, and the event frame computation (`getEventFramesAndReset`, paper eq. 2). Contains all per-feature state.
-
-- **`Optimizer`** (`optimizer.h`/`optimizer.cpp`) — Uses Ceres solver to optimize the photometric cost function (paper eq. 7) — jointly estimates warp and optical flow direction for each patch against precomputed log-image gradients.
-
-- **`Viewer`** (`viewer.h`/`viewer.cpp`) — Publishes visualization to `/feature_tracks` topic. Controlled by `display_features`, `display_feature_id`, `display_feature_patches` flags.
-
-- **`error.h`** — Defines the Ceres cost functor (ECC-based photometric error).
-
-- **`types.h`** — Type aliases (`ImageBuffer`, `EventBuffer`, `Patches`, `OptimizerData`).
-
-### Key data flow
-Events arrive via ROS callback → insertion-sorted into shared deque → worker thread pops events → dispatches to matching Patches → when a Patch accumulates enough events (adaptive batch size) → Optimizer solves for updated warp/flow → Patch center updated → Viewer renders.
-
-## Configuration
-
-- **`config/eklt.conf`** — gflags flagfile loaded by the launch file. Key parameter: `min_corners=0` (paper setting, no re-initialization after first frame; set to ~50 for continuous tracking).
-- **`launch/eklt.launch`** — ROS launch file. Supports args: `bag`, `v` (glog verbosity), `tracks_file_txt`.
-
-## Dependencies
-
-Managed via `dependencies.yaml` (consumed by `vcs-import`): catkin_simple, ceres_catkin, eigen_catkin, glog_catkin, gflags_catkin, rpg_dvs_ros (for dvs_msgs), suitesparse, eigen_checks.
-
-## Devcontainer
-
-The `.devcontainer/` setup supports configurable base images, optional CUDA, and ROS 1/2 installation. Use `configure_devcontainer.sh` to reconfigure (supports `--ros noetic`, `--cuda`, `--base ubuntu-20.04`, etc.). The default target is Ubuntu 20.04 with ROS noetic.
+- Use C++17 for ROS1, the ROS-free native library, FIBAR, wrappers, and ROS2.
+- Keep ROS-free targets independent of catkin and ROS messages.
+- Do not change inherited `cmake/*.cmake` files. Correct repository usage or
+  report an upstream parent-template defect.
+- Keep OptiX, PTX, and ZeroMQ out of active EKLT configuration.
+- Keep `lib/fibar_lib` and `lib/wrap` pinned at their SSH origins and do not
+  edit submodules or external repositories.
+- Use Eigen for wrapper arrays. Add `*Adapter` or `*Orchestrator` classes only
+  when dtype conversion or functional coordination requires them.
+- Preserve unrelated dirty-worktree changes. Do not stage, commit, tag, or push
+  without explicit permission.
 
 ## Tests
 
-Test infrastructure uses Catch2 (see `tests/CMakeLists.txt`). Template fixtures and tests are in `tests/template_fixtures/` and `tests/template_test/`.
+Native tests use Catch2 v3. Python tests use pytest. The installed consumer
+fixture is under `tests/consumer/`. Do not import recursive parent-template
+conformance tests into the ordinary EKLT CTest suite.
+
+For current validation results and environment gates, see:
+
+- `doc/developments/cpp_cuda_template_upgrade_plan.md`
+- `doc/developments/dataset_and_online_streaming_plan.md`
+- `doc/developments/reports/cpp_cuda_template_upgrade_acceptance_2026-07-25.md`
+
+Completed and superseded plans under `doc/developments/archive/` are
+point-in-time records. Do not use their old paths or decisions as current
+implementation guidance.

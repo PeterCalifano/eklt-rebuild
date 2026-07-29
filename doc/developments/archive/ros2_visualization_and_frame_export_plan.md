@@ -1,5 +1,9 @@
 # ROS2 Visualization and FIBAR Frame Export Plan
 
+> **Archived completed subplan.** This Stage 14 work is accepted and described
+> for users in `doc/ros2_event_only.md`. The checklist below remains as
+> implementation history rather than an active plan.
+
 ## Goal and checkpoint boundary
 
 Extend the open Stage 14 ROS2 event-only overlay with original-demo feature
